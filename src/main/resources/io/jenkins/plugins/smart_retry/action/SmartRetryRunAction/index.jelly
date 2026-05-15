@@ -1,0 +1,118 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout" xmlns:st="jelly:stapler">
+    <l:layout title="Smart Retry">
+        <l:side-panel>
+            <st:include page="sidepanel.jelly" it="${it.run}" />
+        </l:side-panel>
+        <l:main-panel>
+            <div class="jenkins-app-bar">
+                <div class="jenkins-app-bar__content">
+                    <div class="jenkins-app-bar__main">
+                        <h1 class="jenkins-app-bar__title">Smart Retry</h1>
+                        <p>Deterministic retry details for this build.</p>
+                        <j:if test="${it.run}">
+                            <p><a href="../">${it.run.fullDisplayName}</a></p>
+                        </j:if>
+                        <p>
+                            <l:badge badge="${it.finalOutcomeBadge}" />
+                            <l:badge badge="${it.retriesScheduledBadge}" />
+                            <l:badge badge="${it.profileBadge}" />
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <l:card title="Overview">
+                <p>${it.narrativeSummary}</p>
+                <p>${it.narrativeReason}</p>
+                <table class="pane">
+                    <tbody>
+                        <j:if test="${it.hasProfile}">
+                            <tr>
+                                <th>Profile</th>
+                                <td>${it.profile}</td>
+                            </tr>
+                        </j:if>
+                        <tr>
+                            <th>Final outcome</th>
+                            <td>
+                                <l:badge badge="${it.finalOutcomeBadge}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Recorded attempts</th>
+                            <td>${it.attemptsCount}</td>
+                        </tr>
+                        <tr>
+                            <th>Retries scheduled</th>
+                            <td>
+                                <l:badge badge="${it.retriesScheduledBadge}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Terminal failure type</th>
+                            <td>${it.terminalFailureTypeDisplay}</td>
+                        </tr>
+                        <tr>
+                            <th>Terminal matched rule</th>
+                            <td>${it.terminalMatchedRuleDisplay}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </l:card>
+
+            <l:card title="Attempt Log">
+                <j:choose>
+                    <j:when test="${it.attemptsCount > 0}">
+                        <table class="pane sortable">
+                            <thead>
+                                <tr>
+                                    <th align="left">Attempt</th>
+                                    <th align="left">Failure type</th>
+                                    <th align="left">Matched rule</th>
+                                    <th align="left">Decision</th>
+                                    <th align="left">Delay (ms)</th>
+                                    <th align="left">Outcome</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <j:forEach var="a" items="${it.attempts}">
+                                    <tr>
+                                        <td>${a.attemptNumber}</td>
+                                        <td>
+                                            <a href="${rootURL}/smartRetryDocs#${a.failureTypeDocumentationAnchor}">
+                                                ${a.failureType}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <j:choose>
+                                                <j:when test="${a.matchedRuleDocumentationAnchor}">
+                                                    <a href="${rootURL}/smartRetryDocs#${a.matchedRuleDocumentationAnchor}">
+                                                        ${a.matchedRuleDisplay}
+                                                    </a>
+                                                </j:when>
+                                                <j:otherwise>
+                                                    ${a.matchedRuleDisplay}
+                                                </j:otherwise>
+                                            </j:choose>
+                                        </td>
+                                        <td>
+                                            <l:badge badge="${a.retryDecisionBadge}" />
+                                        </td>
+                                        <td>${a.delayMillis}</td>
+                                        <td>
+                                            <l:badge badge="${a.outcomeBadge}" />
+                                        </td>
+                                    </tr>
+                                </j:forEach>
+                            </tbody>
+                        </table>
+                    </j:when>
+                    <j:otherwise>
+                        <p>No Smart Retry attempts were recorded for this build.</p>
+                    </j:otherwise>
+                </j:choose>
+            </l:card>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

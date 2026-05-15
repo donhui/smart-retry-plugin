@@ -1,0 +1,76 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
+    <l:layout title="Smart Retry Docs">
+        <l:main-panel>
+            <div class="jenkins-app-bar">
+                <div class="jenkins-app-bar__content">
+                    <div class="jenkins-app-bar__main">
+                        <h1 class="jenkins-app-bar__title">Smart Retry Docs</h1>
+                        <p>Reference material for failure types, matched rules, and why Smart Retry will or will not reschedule a build.</p>
+                        <p><a href="${rootURL}/plugin/smart-retry">Plugin home</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <l:card title="Failure Types">
+                <p>These are the failure classes defined by Smart Retry. Retry behavior depends on both classification confidence and the active retry profile.</p>
+                <table class="pane sortable">
+                    <thead>
+                        <tr>
+                            <th align="left">Failure type</th>
+                            <th align="left">Meaning</th>
+                            <th align="left">Current implementation</th>
+                            <th align="left">Conservative</th>
+                            <th align="left">Infra</th>
+                            <th align="left">Custom profiles</th>
+                            <th align="left">Why it does or does not retry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <j:forEach var="d" items="${it.failureTypes}">
+                            <tr id="${d.anchorId}">
+                                <td><strong>${d.name}</strong></td>
+                                <td>${d.meaning}</td>
+                                <td>${d.currentImplementation}</td>
+                                <td>${d.conservativeBehavior}</td>
+                                <td>${d.infraBehavior}</td>
+                                <td>${d.customBehavior}</td>
+                                <td>${d.rationale}</td>
+                            </tr>
+                        </j:forEach>
+                    </tbody>
+                </table>
+            </l:card>
+
+            <l:card title="Matched Rules">
+                <p>These are the deterministic rules the current classifier can emit today. Exception-based rules fire before message-pattern rules. The Disableable column shows whether a rule can be skipped via disabledBuiltInRules.</p>
+                <table class="pane sortable">
+                    <thead>
+                        <tr>
+                            <th align="left">Matched rule</th>
+                            <th align="left">Emits failure type</th>
+                            <th align="left">Trigger kind</th>
+                            <th align="left">Trigger</th>
+                            <th align="left">Classifier result</th>
+                            <th align="left">Disableable</th>
+                            <th align="left">Why</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <j:forEach var="d" items="${it.matchedRules}">
+                            <tr id="${d.anchorId}">
+                                <td><strong>${d.name}</strong></td>
+                                <td><a href="#${d.failureTypeAnchorId}">${d.failureTypeName}</a></td>
+                                <td>${d.triggerKind}</td>
+                                <td><code>${d.triggerHint}</code></td>
+                                <td>${d.defaultBehavior}</td>
+                                <td>${d.disableable}</td>
+                                <td>${d.rationale}</td>
+                            </tr>
+                        </j:forEach>
+                    </tbody>
+                </table>
+            </l:card>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

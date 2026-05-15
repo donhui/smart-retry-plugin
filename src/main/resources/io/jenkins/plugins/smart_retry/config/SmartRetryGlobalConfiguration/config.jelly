@@ -1,0 +1,40 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:section title="Smart Retry">
+        <f:entry title="Default profile" field="defaultProfile">
+            <f:select />
+        </f:entry>
+
+        <f:advanced title="Advanced">
+            <f:entry title="Console context lines" field="consoleContextLines">
+                <f:number clazz="number" min="0" />
+            </f:entry>
+
+            <f:entry title="Max retries" field="maxRetries">
+                <f:number clazz="number" min="0" />
+            </f:entry>
+            <f:entry title="Backoff" field="backoff">
+                <f:select />
+            </f:entry>
+            <f:entry title="Initial delay seconds" field="initialDelaySeconds">
+                <f:number clazz="number" min="0" />
+            </f:entry>
+            <f:entry title="Disabled built-in rules" field="disabledBuiltInRules">
+                <f:expandableTextbox />
+            </f:entry>
+        </f:advanced>
+
+        <f:entry title="Custom profiles">
+            <div class="jenkins-description">
+                Define named profiles only when the built-in <code>conservative</code> and <code>infra</code> profiles are not enough.
+            </div>
+            <f:repeatableProperty field="customProfiles" add="Add custom profile" header="Custom profile">
+                <f:block>
+                    <div align="right">
+                        <f:repeatableDeleteButton />
+                    </div>
+                </f:block>
+            </f:repeatableProperty>
+        </f:entry>
+    </f:section>
+</j:jelly>

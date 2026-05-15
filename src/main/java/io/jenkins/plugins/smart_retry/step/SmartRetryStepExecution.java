@@ -1,0 +1,306 @@
+package io.jenkins.plugins.smart_retry.step;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import io.jenkins.plugins.smart_retry.action.SmartRetryRunAction;
+import io.jenkins.plugins.smart_retry.classify.DeterministicFailureClassifier;
+import io.jenkins.plugins.smart_retry.classify.FailureClassifier;
+import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
+import io.jenkins.plugins.smart_retry.model.AttemptRecord;
+import io.jenkins.plugins.smart_retry.model.FailureClassification;
+import io.jenkins.plugins.smart_retry.model.RetryDecision;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
+import io.jenkins.plugins.smart_retry.policy.DeterministicRetryPolicy;
+import io.jenkins.plugins.smart_retry.policy.RetryPolicy;
+import io.jenkins.plugins.smart_retry.policy.RuntimeSettings;
+import java.io.IOException;
+import java.io.Serial;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import jenkins.util.Timer;
+import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+
+public class SmartRetryStepExecution extends StepExecution {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private static final Logger LOGGER = Logger.getLogger(SmartRetryStepExecution.class.getName());
+    private static final String ATTEMPT_MARKER_PREFIX = "[smartRetry] begin attempt=";
+    private static final int DEFAULT_LOG_CONTEXT_MAX_LINES = 200;
+
+    private final String profile;
+    private final Integer maxRetries;
+    private final String backoff;
+    private final Integer initialDelaySeconds;
+
+    private RuntimeSettings resolvedSettings;
+    private int resolvedConsoleContextLines = DEFAULT_LOG_CONTEXT_MAX_LINES;
+    private Set<String> resolvedDisabledBuiltInRuleIds = Set.of();
+    private int attemptNumber = 1;
+    private long waitingUntilMillis;
+    private transient volatile ScheduledFuture<?> waitingTask;
+
+    SmartRetryStepExecution(SmartRetryStep step, StepContext context) {
+        super(context);
+        this.profile = step.getProfile();
+        this.maxRetries = step.getMaxRetries();
+        this.backoff = step.getBackoff();
+        this.initialDelaySeconds = step.getInitialDelaySeconds();
+    }
+
+    @Override
+    public boolean start() throws Exception {
+        resolveExecutionConfiguration();
+        startAttempt();
+        return false;
+    }
+
+    @Override
+    public void onResume() {
+        if (waitingUntilMillis <= 0L) {
+            return;
+        }
+        scheduleRetry(System.currentTimeMillis());
+    }
+
+    @Override
+    public void stop(Throwable cause) throws Exception {
+        ScheduledFuture<?> task = waitingTask;
+        if (task != null) {
+            task.cancel(false);
+        }
+        super.stop(cause);
+    }
+
+    private void startAttempt() {
+        try {
+            TaskListener listener = getContext().get(TaskListener.class);
+            if (listener != null) {
+                listener.getLogger().println(ATTEMPT_MARKER_PREFIX + attemptNumber);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "smartRetry attempt marker logging failed", e);
+        }
+        getContext()
+                .newBodyInvoker()
+                .withDisplayName(stepLabel())
+                .withCallback(new SmartRetryBodyCallback())
+                .start();
+    }
+
+    private String stepLabel() {
+        if (resolvedSettings == null
+                || resolvedSettings.getProfile() == null
+                || resolvedSettings.getProfile().isBlank()) {
+            return "smartRetry (attempt " + attemptNumber + ")";
+        }
+        return "smartRetry (" + resolvedSettings.getProfile() + ", attempt " + attemptNumber + ")";
+    }
+
+    private final class SmartRetryBodyCallback extends BodyExecutionCallback {
+
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public void onSuccess(StepContext context, Object result) {
+            markSuccess(context);
+            context.onSuccess(result);
+        }
+
+        @Override
+        public void onFailure(StepContext context, Throwable t) {
+            try {
+                RuntimeSettings settings = resolvedSettings;
+                FailureClassifier classifier = new DeterministicFailureClassifier(resolvedDisabledBuiltInRuleIds);
+                RetryPolicy policy = new DeterministicRetryPolicy();
+
+                String messageContext = loadAttemptConsoleContext(context, attemptNumber, resolvedConsoleContextLines);
+                FailureClassification classification = classifier.classify(t, messageContext);
+                RetryDecision decision = policy.decide(classification, settings, attemptNumber);
+
+                TaskListener listener = context.get(TaskListener.class);
+                if (listener != null) {
+                    listener.getLogger()
+                            .println("[smartRetry] attempt=" + attemptNumber
+                                    + " profile=" + settings.getProfile()
+                                    + " classified=" + classification.getType()
+                                    + " retryCandidate=" + classification.isRetryCandidate()
+                                    + " decision=" + (decision.shouldRetry() ? "RETRY" : "FAIL")
+                                    + " nextAttempt=" + decision.getNextAttemptNumber()
+                                    + " delayMillis=" + decision.getDelayMillis()
+                                    + " reason=\"" + decision.getReason() + "\"");
+                }
+
+                recordAttempt(context, settings.getProfile(), classification, decision);
+
+                if (decision.shouldRetry()) {
+                    attemptNumber = decision.getNextAttemptNumber();
+                    waitingUntilMillis = System.currentTimeMillis() + decision.getDelayMillis();
+                    scheduleRetry(System.currentTimeMillis());
+                    return;
+                }
+
+                // Final failure path.
+                setFinalOutcome(context, "FAILED");
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "smartRetry decision logging failed", e);
+            }
+            context.onFailure(t);
+        }
+    }
+
+    private void recordAttempt(
+            StepContext context, String profile, FailureClassification classification, RetryDecision decision) {
+        Run<?, ?> run;
+        try {
+            run = context.get(Run.class);
+        } catch (Exception e) {
+            return;
+        }
+        if (run == null) {
+            return;
+        }
+        SmartRetryRunAction action = SmartRetryRunAction.getOrCreate(run);
+        action.setProfile(profile);
+
+        boolean retried = decision.shouldRetry();
+        String outcome = retried ? "RETRY_SCHEDULED" : "FAILED";
+        action.addAttempt(new AttemptRecord(
+                attemptNumber,
+                classification.getType(),
+                classification.getMatchedRule(),
+                retried,
+                decision.getDelayMillis(),
+                outcome));
+    }
+
+    private void markSuccess(StepContext context) {
+        Run<?, ?> run;
+        try {
+            run = context.get(Run.class);
+        } catch (Exception e) {
+            return;
+        }
+        if (run == null) {
+            return;
+        }
+        SmartRetryRunAction action = run.getAction(SmartRetryRunAction.class);
+        if (action != null) {
+            action.setFinalOutcome("SUCCESS");
+        }
+    }
+
+    private void setFinalOutcome(StepContext context, String outcome) {
+        Run<?, ?> run;
+        try {
+            run = context.get(Run.class);
+        } catch (Exception e) {
+            return;
+        }
+        if (run == null) {
+            return;
+        }
+        SmartRetryRunAction action = run.getAction(SmartRetryRunAction.class);
+        if (action != null) {
+            action.setFinalOutcome(outcome);
+        }
+    }
+
+    private void resolveExecutionConfiguration() {
+        SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
+        if (cfg == null) {
+            String effectiveProfile = profile;
+            if (effectiveProfile == null || effectiveProfile.isBlank()) {
+                effectiveProfile = "conservative";
+            }
+            RuntimeSettings defaults = BuiltInProfiles.defaultsFor(effectiveProfile);
+            resolvedSettings = BuiltInProfiles.resolve(defaults, maxRetries, backoff, initialDelaySeconds);
+            resolvedConsoleContextLines = DEFAULT_LOG_CONTEXT_MAX_LINES;
+            resolvedDisabledBuiltInRuleIds = Set.of();
+            return;
+        }
+        resolvedSettings = cfg.resolveStepSettings(profile, maxRetries, backoff, initialDelaySeconds);
+        resolvedConsoleContextLines = Math.max(0, cfg.getConsoleContextLines());
+        resolvedDisabledBuiltInRuleIds = cfg.getDisabledBuiltInRuleIds();
+    }
+
+    @CheckForNull
+    private static String loadAttemptConsoleContext(StepContext context, int attemptNumber, int maxLines) {
+        if (maxLines <= 0) {
+            return null;
+        }
+        Run<?, ?> run;
+        try {
+            run = context.get(Run.class);
+        } catch (Exception e) {
+            return null;
+        }
+        if (run == null) {
+            return null;
+        }
+        List<String> tail;
+        try {
+            tail = run.getLog(maxLines);
+        } catch (IOException e) {
+            return null;
+        }
+        if (tail.isEmpty()) {
+            return null;
+        }
+
+        String marker = ATTEMPT_MARKER_PREFIX + attemptNumber;
+        int startIndex = 0;
+        for (int i = tail.size() - 1; i >= 0; i--) {
+            if (tail.get(i).contains(marker)) {
+                startIndex = i + 1;
+                break;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = startIndex; i < tail.size(); i++) {
+            String line = tail.get(i);
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            if (!sb.isEmpty()) {
+                sb.append('\n');
+            }
+            sb.append(line);
+        }
+        if (sb.isEmpty()) {
+            return null;
+        }
+        return sb.toString();
+    }
+
+    private void scheduleRetry(long nowMillis) {
+        long remainingMillis = Math.max(0L, waitingUntilMillis - nowMillis);
+        if (remainingMillis == 0L) {
+            waitingUntilMillis = 0L;
+            startAttempt();
+            return;
+        }
+        ScheduledFuture<?> existing = waitingTask;
+        if (existing != null) {
+            existing.cancel(false);
+        }
+        waitingTask = Timer.get()
+                .schedule(
+                        () -> {
+                            waitingUntilMillis = 0L;
+                            startAttempt();
+                        },
+                        remainingMillis,
+                        TimeUnit.MILLISECONDS);
+    }
+}

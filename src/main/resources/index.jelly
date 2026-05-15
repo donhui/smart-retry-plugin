@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    Smart Retry provides a conservative, explainable Pipeline-first retry step for transient Jenkins infrastructure failures.
+</div>

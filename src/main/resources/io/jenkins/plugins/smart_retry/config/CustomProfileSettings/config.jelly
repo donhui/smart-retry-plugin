@@ -1,0 +1,24 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="Name" field="name">
+        <f:textbox />
+        <div class="jenkins-description">
+            Exact profile name used by <code>smartRetry(profile: '...')</code>.
+        </div>
+    </f:entry>
+    <f:entry title="Retryable failure types" field="retryableFailureTypeSelections">
+        <div class="jenkins-checkbox-group">
+            <j:forEach var="failureType" items="${descriptor.supportedRetryableFailureTypes}">
+                <f:checkbox
+                    name="_.retryableFailureTypeSelections"
+                    json="${failureType.name()}"
+                    checked="${instance != null and instance.includesRetryableFailureType(failureType)}"
+                    title="${failureType.name()}"
+                    description="${descriptor.describeRetryableFailureType(failureType)}" />
+            </j:forEach>
+        </div>
+        <div class="jenkins-description">
+            Choose one or more retryable transient failure types for this profile.
+        </div>
+    </f:entry>
+</j:jelly>

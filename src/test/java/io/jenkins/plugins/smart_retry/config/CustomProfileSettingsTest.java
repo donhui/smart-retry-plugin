@@ -1,0 +1,33 @@
+package io.jenkins.plugins.smart_retry.config;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.jenkins.plugins.smart_retry.model.FailureType;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class CustomProfileSettingsTest {
+
+    @Test
+    void normalizesCheckboxSelectionsIntoStoredFailureTypes() {
+        CustomProfileSettings profile = new CustomProfileSettings();
+
+        profile.setRetryableFailureTypeSelections(List.of("NETWORK_TRANSIENT", "AGENT_LOST", "unknown"));
+
+        assertEquals("AGENT_LOST\nNETWORK_TRANSIENT", profile.getRetryableFailureTypes());
+        assertEquals(List.of("AGENT_LOST", "NETWORK_TRANSIENT"), profile.getRetryableFailureTypeSelections());
+        assertTrue(profile.includesRetryableFailureType(FailureType.AGENT_LOST));
+    }
+
+    @Test
+    void clearsStoredFailureTypesWhenSelectionsAreEmpty() {
+        CustomProfileSettings profile = new CustomProfileSettings();
+        profile.setRetryableFailureTypes("agent_lost\nnetwork_transient");
+
+        profile.setRetryableFailureTypeSelections(List.of());
+
+        assertEquals("", profile.getRetryableFailureTypes());
+        assertEquals(List.of(), profile.getRetryableFailureTypeSelections());
+    }
+}

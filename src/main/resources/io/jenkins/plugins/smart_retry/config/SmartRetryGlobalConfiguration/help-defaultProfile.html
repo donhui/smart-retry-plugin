@@ -1,0 +1,6 @@
+<div>
+  Built-in profiles are <code>conservative</code> and <code>infra</code>. You can also set any configured custom profile name.
+  <code>conservative</code> retries only <code>AGENT_LOST</code> and <code>SCM_TRANSIENT</code>. <code>infra</code>
+  also enables <code>NETWORK_TRANSIENT</code>, <code>ARTIFACT_REPO_TRANSIENT</code>, and
+  <code>IDENTITY_PROVIDER_TRANSIENT</code>. Pipeline calls that use an unknown profile are rejected at runtime.
+</div>
