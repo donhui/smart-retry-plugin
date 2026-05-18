@@ -189,3 +189,7 @@ Recommended next coding slice:
 ### 2026-05-15
 
 - [x] Simplified the global Smart Retry system configuration UI by restructuring the page around a default-profile-first flow, moving operator-only settings into `Advanced`, converting default profile selection to a constrained dropdown, upgrading custom profile failure-type selection from free-text to checkboxes, removing redundant help/add-button clutter, and adding focused configuration coverage for the updated form behavior
+
+### 2026-05-18
+
+- [x] Completed explicit system-configuration form validation by adding field-level checks for custom profile names and numeric settings, enforcing duplicate-name/reserved-name/empty-selection failures during custom profile submission, and extending focused configuration tests for the new validation paths

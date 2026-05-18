@@ -4,7 +4,9 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.util.FormValidation;
 import io.jenkins.plugins.smart_retry.model.FailureType;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,6 +17,7 @@ import java.util.Locale;
 import java.util.Set;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 public final class CustomProfileSettings extends AbstractDescribableImpl<CustomProfileSettings>
         implements Serializable {
@@ -141,6 +144,18 @@ public final class CustomProfileSettings extends AbstractDescribableImpl<CustomP
 
         public List<FailureType> getSupportedRetryableFailureTypes() {
             return supportedRetryableFailureTypes();
+        }
+
+        public FormValidation doCheckName(@QueryParameter String value) {
+            String normalized = normalizeName(value);
+            if (normalized.isBlank()) {
+                return FormValidation.error("Profile name is required.");
+            }
+            if (BuiltInProfiles.isBuiltInProfile(normalized)) {
+                return FormValidation.error(
+                        "Profile name '" + normalized + "' is reserved for a built-in Smart Retry profile.");
+            }
+            return FormValidation.ok("Profile name will be stored as '" + normalized + "'.");
         }
 
         public String describeRetryableFailureType(FailureType type) {

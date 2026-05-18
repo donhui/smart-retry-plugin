@@ -3,12 +3,15 @@ package io.jenkins.plugins.smart_retry.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import io.jenkins.plugins.smart_retry.policy.BackoffStrategy;
 import java.util.List;
 import java.util.Set;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
@@ -120,6 +123,12 @@ class SmartRetryGlobalConfigurationTest {
         assertEquals(FormValidation.Kind.OK, cfg.doCheckDefaultProfile("infra").kind);
         assertEquals(FormValidation.Kind.OK, cfg.doCheckDefaultProfile("release").kind);
         assertEquals(FormValidation.Kind.WARNING, cfg.doCheckDefaultProfile("missing").kind);
+        assertEquals(FormValidation.Kind.OK, cfg.doCheckConsoleContextLines("200").kind);
+        assertEquals(FormValidation.Kind.ERROR, cfg.doCheckConsoleContextLines("-1").kind);
+        assertEquals(FormValidation.Kind.OK, cfg.doCheckMaxRetries("3").kind);
+        assertEquals(FormValidation.Kind.ERROR, cfg.doCheckMaxRetries("abc").kind);
+        assertEquals(FormValidation.Kind.OK, cfg.doCheckInitialDelaySeconds("7").kind);
+        assertEquals(FormValidation.Kind.ERROR, cfg.doCheckInitialDelaySeconds("").kind);
         assertEquals(FormValidation.Kind.OK, cfg.doCheckDisabledBuiltInRules("").kind);
         assertEquals(
                 FormValidation.Kind.OK,
@@ -127,5 +136,60 @@ class SmartRetryGlobalConfigurationTest {
         assertEquals(
                 FormValidation.Kind.WARNING,
                 cfg.doCheckDisabledBuiltInRules("scm-remote-end-hung-up\nunknown-rule").kind);
+    }
+
+    @Test
+    void rejectsCustomProfilesWithoutRetryableFailureTypes() {
+        CustomProfileSettings empty = new CustomProfileSettings();
+        empty.setName("empty");
+
+        Descriptor.FormException exception = assertThrows(
+                Descriptor.FormException.class,
+                () -> SmartRetryGlobalConfiguration.validateCustomProfiles(List.of(empty)));
+
+        assertEquals("Custom profile 'empty' must select at least one retryable failure type.", exception.getMessage());
+    }
+
+    @Test
+    void rejectsInvalidCustomProfileNamesInSubmittedForm() {
+        JSONObject duplicate = new JSONObject();
+        duplicate.put("name", "release");
+        duplicate.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("NETWORK_TRANSIENT")));
+
+        JSONObject duplicateAgain = new JSONObject();
+        duplicateAgain.put("name", "release");
+        duplicateAgain.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("AGENT_LOST")));
+
+        JSONObject reserved = new JSONObject();
+        reserved.put("name", "infra");
+        reserved.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("AGENT_LOST")));
+
+        JSONObject blank = new JSONObject();
+        blank.put("name", "");
+        blank.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("AGENT_LOST")));
+
+        JSONObject duplicateForm = new JSONObject();
+        duplicateForm.put("customProfiles", JSONArray.fromObject(List.of(duplicate, duplicateAgain)));
+
+        Descriptor.FormException duplicateException = assertThrows(
+                Descriptor.FormException.class,
+                () -> SmartRetryGlobalConfiguration.validateCustomProfilesForm(duplicateForm));
+        assertEquals("Custom profile 'release' is defined more than once.", duplicateException.getMessage());
+
+        JSONObject reservedForm = new JSONObject();
+        reservedForm.put("customProfiles", reserved);
+
+        Descriptor.FormException reservedException = assertThrows(
+                Descriptor.FormException.class,
+                () -> SmartRetryGlobalConfiguration.validateCustomProfilesForm(reservedForm));
+        assertEquals("Custom profile 'infra' uses a reserved built-in profile name.", reservedException.getMessage());
+
+        JSONObject blankForm = new JSONObject();
+        blankForm.put("customProfiles", blank);
+
+        Descriptor.FormException blankException = assertThrows(
+                Descriptor.FormException.class,
+                () -> SmartRetryGlobalConfiguration.validateCustomProfilesForm(blankForm));
+        assertEquals("Custom profile name is required.", blankException.getMessage());
     }
 }

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -149,7 +150,9 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     @Override
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
+        validateCustomProfilesForm(json);
         req.bindJSON(this, json);
+        validateCustomProfiles(customProfiles());
         save();
         return true;
     }
@@ -212,11 +215,91 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.warning("Unknown rule ids will be ignored when saving: " + String.join(", ", unknown));
     }
 
+    public FormValidation doCheckConsoleContextLines(@QueryParameter String value) {
+        return validateNonNegativeInteger("Console context lines", value);
+    }
+
+    public FormValidation doCheckMaxRetries(@QueryParameter String value) {
+        return validateNonNegativeInteger("Max retries", value);
+    }
+
+    public FormValidation doCheckInitialDelaySeconds(@QueryParameter String value) {
+        return validateNonNegativeInteger("Initial delay seconds", value);
+    }
+
     private List<CustomProfileSettings> customProfiles() {
         if (customProfiles == null) {
             customProfiles = new ArrayList<>();
         }
         return customProfiles;
+    }
+
+    static void validateCustomProfilesForm(JSONObject json) throws FormException {
+        Object rawProfiles = json.opt("customProfiles");
+        if (rawProfiles == null) {
+            return;
+        }
+
+        List<JSONObject> customProfiles = new ArrayList<>();
+        if (rawProfiles instanceof JSONArray array) {
+            for (Object candidate : array) {
+                if (candidate instanceof JSONObject profileJson) {
+                    customProfiles.add(profileJson);
+                }
+            }
+        } else if (rawProfiles instanceof JSONObject profileJson) {
+            customProfiles.add(profileJson);
+        }
+
+        Set<String> seenNames = new LinkedHashSet<>();
+        for (JSONObject customProfile : customProfiles) {
+            String normalizedName = CustomProfileSettings.normalizeName(customProfile.optString("name"));
+            if (normalizedName.isBlank()) {
+                throw new FormException("Custom profile name is required.", "customProfiles");
+            }
+            if (BuiltInProfiles.isBuiltInProfile(normalizedName)) {
+                throw new FormException(
+                        "Custom profile '" + normalizedName + "' uses a reserved built-in profile name.",
+                        "customProfiles");
+            }
+            if (!seenNames.add(normalizedName)) {
+                throw new FormException(
+                        "Custom profile '" + normalizedName + "' is defined more than once.", "customProfiles");
+            }
+            if (!hasConfiguredFailureTypes(customProfile.opt("retryableFailureTypeSelections"))) {
+                throw new FormException(
+                        "Custom profile '" + normalizedName + "' must select at least one retryable failure type.",
+                        "customProfiles");
+            }
+        }
+    }
+
+    static void validateCustomProfiles(List<CustomProfileSettings> customProfiles) throws FormException {
+        if (customProfiles == null || customProfiles.isEmpty()) {
+            return;
+        }
+        for (CustomProfileSettings customProfile : customProfiles) {
+            if (customProfile == null) {
+                continue;
+            }
+            if (!customProfile.getName().isBlank()
+                    && customProfile.getRetryableFailureTypeSet().isEmpty()) {
+                throw new FormException(
+                        "Custom profile '" + customProfile.getName()
+                                + "' must select at least one retryable failure type.",
+                        "customProfiles");
+            }
+        }
+    }
+
+    private static boolean hasConfiguredFailureTypes(Object selections) {
+        if (selections instanceof JSONArray array) {
+            return !array.isEmpty();
+        }
+        if (selections instanceof String value) {
+            return !value.isBlank();
+        }
+        return false;
     }
 
     private static List<CustomProfileSettings> sanitizeCustomProfiles(
@@ -249,6 +332,21 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             return fallback;
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static FormValidation validateNonNegativeInteger(String label, @CheckForNull String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.error(label + " is required.");
+        }
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            if (parsed < 0) {
+                return FormValidation.error(label + " must be 0 or greater.");
+            }
+            return FormValidation.ok(label + " is valid.");
+        } catch (NumberFormatException ignored) {
+            return FormValidation.error(label + " must be a whole number.");
+        }
     }
 
     private static String normalizeBackoff(@CheckForNull String value, String fallback) {
