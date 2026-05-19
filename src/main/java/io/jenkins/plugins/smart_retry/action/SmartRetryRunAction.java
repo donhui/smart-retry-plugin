@@ -131,6 +131,9 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     }
 
     public String getTerminalFailureTypeDisplay() {
+        if ("SUCCESS".equals(finalOutcome)) {
+            return "n/a";
+        }
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
             return "n/a";
@@ -139,6 +142,9 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     }
 
     public String getTerminalMatchedRuleDisplay() {
+        if ("SUCCESS".equals(finalOutcome)) {
+            return "n/a";
+        }
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
             return "n/a";
@@ -146,7 +152,31 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         return attempt.getMatchedRuleDisplay();
     }
 
+    public String getLastRetryTriggeringFailureTypeDisplay() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null) {
+            return "n/a";
+        }
+        return attempt.getFailureType().name();
+    }
+
+    public String getLastRetryTriggeringMatchedRuleDisplay() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null) {
+            return "n/a";
+        }
+        return attempt.getMatchedRuleDisplay();
+    }
+
+    public boolean isRecoveredBuild() {
+        return "SUCCESS".equals(finalOutcome) && !attempts.isEmpty();
+    }
+
     public String getNarrativeSummary() {
+        if ("SUCCESS".equals(finalOutcome) && !isHasAttempts()) {
+            return "The build completed successfully without Smart Retry needing to reschedule the body.";
+        }
+
         if (!isHasAttempts()) {
             return "This build finished without recording any Smart Retry attempts.";
         }
@@ -185,6 +215,18 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     }
 
     public String getNarrativeReason() {
+        if ("SUCCESS".equals(finalOutcome)) {
+            AttemptRecord lastFailure = getTerminalAttempt();
+            if (lastFailure == null) {
+                return "The body succeeded on its first attempt, so no failure classification was needed.";
+            }
+            return "Smart Retry finished successfully after the last recorded retry-triggering failure was classified as "
+                    + lastFailure.getFailureType().name()
+                    + " by rule "
+                    + lastFailure.getMatchedRuleDisplay()
+                    + ".";
+        }
+
         AttemptRecord terminalAttempt = getTerminalAttempt();
         if (terminalAttempt == null) {
             return "No terminal classification is available yet.";

@@ -1,0 +1,10 @@
+[Pipeline] checkout
+Cloning the remote Git repository
+Fetching upstream changes from http://gitlab.example/acme/platform.git
+ > git init /home/jenkins/workspace/platform # timeout=10
+ > git fetch --tags --force --progress -- http://gitlab.example/acme/platform.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+error: RPC failed; curl 56 Problem (3) in the Chunked-Encoded data
+fetch-pack: unexpected disconnect while reading sideband packet
+fatal: early EOF
+fatal: index-pack failed
+ERROR: Error cloning remote repo 'origin'

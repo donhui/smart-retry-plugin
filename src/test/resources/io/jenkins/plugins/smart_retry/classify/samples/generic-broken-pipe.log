@@ -1,0 +1,5 @@
+[Pipeline] sh
++ ./build-wrapper --mode verify
+wrapper process exited unexpectedly
+write failed: broken pipe
+script returned exit code 1

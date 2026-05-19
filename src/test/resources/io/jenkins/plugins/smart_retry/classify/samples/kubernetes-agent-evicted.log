@@ -1,0 +1,10 @@
+[Pipeline] podTemplate
+[Pipeline] {
+[Pipeline] node
+Still waiting to schedule task
+'kubernetes' is reserved for jobs with matching label expression
+Created Pod: kubernetes jenkins/smart-retry-4k2jm-z8r9q-8d9mm
+[Normal] Scheduled Successfully assigned jenkins/smart-retry-4k2jm-z8r9q-8d9mm to ip-10-0-17-42
+[Warning] Evicted The node was low on resource: ephemeral-storage.
+Pod jenkins/smart-retry-4k2jm-z8r9q-8d9mm was Evicted while the step was still running
+Agent was removed

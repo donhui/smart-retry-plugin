@@ -24,6 +24,32 @@ class SmartRetryStepTest {
         WorkflowRun build = jenkins.buildAndAssertSuccess(job);
 
         jenkins.assertLogContains("inside smart retry", build);
+        jenkins.assertLogContains(
+                "[smartRetry] completed profile=conservative result=SUCCESS attempts=1 retriesUsed=0 reason=\"Body succeeded on first attempt\"",
+                build);
+    }
+
+    @Test
+    void createsRunActionForDirectSuccess(JenkinsRule jenkins) throws Exception {
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-direct-success");
+        job.setDefinition(new CpsFlowDefinition("smartRetry {\n  echo 'no retry needed'\n}", true));
+
+        WorkflowRun build = jenkins.buildAndAssertSuccess(job);
+        SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
+
+        Assertions.assertNotNull(action);
+        Assertions.assertEquals("SUCCESS", action.getFinalOutcome());
+        Assertions.assertEquals("conservative", action.getProfile());
+        Assertions.assertEquals(0, action.getAttempts().size());
+
+        HtmlPage page = jenkins.createWebClient().goTo(build.getUrl() + action.getUrlName());
+
+        Assertions.assertTrue(page.asNormalizedText()
+                .contains("The build completed successfully without Smart Retry needing to reschedule the body."));
+        Assertions.assertTrue(page.asNormalizedText()
+                .contains("The body succeeded on its first attempt, so no failure classification was needed."));
+        Assertions.assertTrue(page.asNormalizedText().contains("Success"));
+        Assertions.assertFalse(page.asNormalizedText().contains("Terminal failure type"));
     }
 
     @Test
@@ -69,10 +95,34 @@ class SmartRetryStepTest {
                 true));
 
         WorkflowRun build = jenkins.buildAndAssertSuccess(job);
+        SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
 
         jenkins.assertLogContains("[smartRetry] attempt=1", build);
         jenkins.assertLogContains("decision=RETRY", build);
+        jenkins.assertLogContains(
+                "[smartRetry] scheduling profile=conservative classified=SCM_TRANSIENT nextAttempt=2 delayMillis=0",
+                build);
         jenkins.assertLogContains("second attempt", build);
+        jenkins.assertLogContains(
+                "[smartRetry] completed profile=conservative result=SUCCESS attempts=2 retriesUsed=1 reason=\"Recovered after 1 scheduled retry\"",
+                build);
+        Assertions.assertNotNull(action);
+        Assertions.assertEquals("SUCCESS", action.getFinalOutcome());
+        Assertions.assertEquals(1, action.getAttempts().size());
+        Assertions.assertEquals("RETRY_SCHEDULED", action.getAttempts().get(0).getOutcome());
+
+        HtmlPage page = jenkins.createWebClient().goTo(build.getUrl() + action.getUrlName());
+
+        Assertions.assertTrue(
+                page.asNormalizedText().contains("Smart Retry recovered this build after 1 scheduled retry."));
+        Assertions.assertTrue(
+                page.asNormalizedText()
+                        .contains(
+                                "Smart Retry finished successfully after the last recorded retry-triggering failure was classified as SCM_TRANSIENT by rule scm-remote-end-hung-up."));
+        Assertions.assertTrue(page.asNormalizedText().contains("Last retry-triggering failure type"));
+        Assertions.assertTrue(page.asNormalizedText().contains("Last retry-triggering rule"));
+        Assertions.assertFalse(page.asNormalizedText().contains("Terminal failure type"));
+        Assertions.assertFalse(page.asNormalizedText().contains("ended with retry scheduled"));
     }
 
     @Test
@@ -91,6 +141,9 @@ class SmartRetryStepTest {
         jenkins.assertLogContains("[smartRetry] attempt=2", build);
         jenkins.assertLogContains("decision=FAIL", build);
         jenkins.assertLogContains("exhausted", build);
+        jenkins.assertLogContains(
+                "[smartRetry] completed profile=conservative result=FAILED attempts=2 classified=SCM_TRANSIENT reason=\"Retry attempts exhausted (maxRetries=1)\"",
+                build);
 
         SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
         Assertions.assertNotNull(action);
@@ -163,6 +216,9 @@ class SmartRetryStepTest {
         jenkins.assertLogContains("[smartRetry] attempt=1", build);
         jenkins.assertLogContains("classified=NETWORK_TRANSIENT", build);
         jenkins.assertLogContains("decision=FAIL", build);
+        jenkins.assertLogContains(
+                "[smartRetry] completed profile=conservative result=FAILED attempts=1 classified=NETWORK_TRANSIENT reason=\"Active profile does not allow retrying: NETWORK_TRANSIENT\"",
+                build);
         jenkins.assertLogNotContains("[smartRetry] attempt=2", build);
     }
 

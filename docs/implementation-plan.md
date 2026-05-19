@@ -4,6 +4,8 @@
 
 This document translates the Smart Retry MVP PRD into a concrete technical design for the Jenkins plugin codebase.
 
+The implementation should preserve the core product promise: avoid blind retries, retry high-confidence transient failures, and fail fast on deterministic errors.
+
 It complements:
 
 - [`mvp-prd.md`](./mvp-prd.md): product behavior and scope
@@ -140,6 +142,11 @@ Possible later fields:
 - `List<String> skipOn`
 
 If added later, these should accept `FailureType` names or equivalent typed values, not raw log patterns.
+
+They should also apply relative to the resolved profile rather than replacing it outright:
+
+- `retryOn` should add `FailureType` values to the active profile allowlist
+- `skipOn` should remove `FailureType` values from the active profile allowlist
 
 Notes:
 
@@ -397,6 +404,9 @@ This ordering keeps explicit safety behavior ahead of user-added retry rules whi
 Suggested future `retryOn` / `skipOn` semantics:
 
 - apply after classification and after built-in/custom rules have produced a `FailureType`
+- treat the selected profile as the base allowlist
+- `retryOn` should add `FailureType` values to that allowlist
+- `skipOn` should remove `FailureType` values from that allowlist
 - `skipOn` should override `retryOn` when both mention the same type
 - these controls should be represented as typed allow/block lists rather than another free-form message-pattern layer
 
@@ -542,7 +552,7 @@ This sequence minimizes the amount of Jenkins-specific plumbing needed before th
 - How should the plugin serialize attempt state across Jenkins restarts during in-flight Pipeline execution?
   - MVP answer: keep only primitive attempt state in `StepExecution` (attempt number and next-run timestamp), keep scheduled tasks transient, and reschedule in `onResume()`.
 - Should persisted custom profile settings and message-pattern authoring land in the pilot-ready V1 line, or move to a cleaner V2 slice after validation of the current deterministic core?
-- Should constrained global custom rules be enough, or will operators still need step-local `retryOn` and `skipOn` controls after real-world usage?
+- After pilot feedback, is there any recurring need for step-local `retryOn` and `skipOn` controls beyond what named custom profiles can express?
 
 ## 17. Recommended First Coding Slice
 

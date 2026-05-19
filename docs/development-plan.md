@@ -4,6 +4,8 @@
 
 This document describes how to deliver the Smart Retry MVP from the current plugin skeleton to a usable first release.
 
+That first release should make retries safer by default: retry the failures worth retrying and fail fast on deterministic errors.
+
 It complements the product requirements in [`mvp-prd.md`](./mvp-prd.md):
 
 - PRD defines what the plugin should do

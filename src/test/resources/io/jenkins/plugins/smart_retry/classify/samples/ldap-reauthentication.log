@@ -1,0 +1,5 @@
+[Pipeline] httpRequest
+POST http://ldap.example/api/v1/session/refresh
+server response: 401
+Can't reauthenticate LDAP for user: 'svc-platform': user is locked, disabled or does not exist in LDAP
+Finished: FAILURE

@@ -49,14 +49,26 @@
                                 <l:badge badge="${it.retriesScheduledBadge}" />
                             </td>
                         </tr>
-                        <tr>
-                            <th>Terminal failure type</th>
-                            <td>${it.terminalFailureTypeDisplay}</td>
-                        </tr>
-                        <tr>
-                            <th>Terminal matched rule</th>
-                            <td>${it.terminalMatchedRuleDisplay}</td>
-                        </tr>
+                        <j:if test="${it.recoveredBuild}">
+                            <tr>
+                                <th>Last retry-triggering failure type</th>
+                                <td>${it.lastRetryTriggeringFailureTypeDisplay}</td>
+                            </tr>
+                            <tr>
+                                <th>Last retry-triggering rule</th>
+                                <td>${it.lastRetryTriggeringMatchedRuleDisplay}</td>
+                            </tr>
+                        </j:if>
+                        <j:if test="${!it.recoveredBuild and it.attemptsCount > 0}">
+                            <tr>
+                                <th>Terminal failure type</th>
+                                <td>${it.terminalFailureTypeDisplay}</td>
+                            </tr>
+                            <tr>
+                                <th>Terminal matched rule</th>
+                                <td>${it.terminalMatchedRuleDisplay}</td>
+                            </tr>
+                        </j:if>
                     </tbody>
                 </table>
             </l:card>

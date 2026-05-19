@@ -22,12 +22,13 @@ Update this file frequently as implementation moves forward.
 ## Current Focus
 
 - Current milestone: `Milestone 7 - Stabilization`
-- Current objective: tighten observability, expand pilot-facing coverage, and validate the shipped deterministic rules against real samples without broadening retry scope
+- Current objective: tighten final pilot-facing observability and release messaging around the core promise of retrying only the failures worth retrying now that restart recovery and curated sample-log validation are covered by tests
 
 ## Current Decisions
 
 - Smart Retry is Pipeline-first for the MVP
 - The public Pipeline step name should be `smartRetry`
+- The user-facing product message should stay centered on avoiding blind retries and retrying only failures worth retrying
 - The default retry profile should be `conservative`
 - The current global configuration surface now includes `defaultProfile`, `consoleContextLines`, shared retry defaults, named custom profiles, and `disabledBuiltInRules`
 - `conservative` and `infra` are fixed built-in profiles, while custom profiles are named allowlists over the retryable transient `FailureType` values
@@ -36,6 +37,8 @@ Update this file frequently as implementation moves forward.
 - Future configuration should also support `disabledBuiltInRules` so operators can turn off one built-in retryable rule without disabling the whole `FailureType`
 - Future custom retryable rules should only target `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, or `IDENTITY_PROVIDER_TRANSIENT`
 - Future `retryOn` and `skipOn` controls should be profile-level `FailureType` policy settings, not raw text matching
+- Named custom profiles should remain the primary MVP policy mechanism; `retryOn` and `skipOn` are follow-up options only if pilot feedback shows a real need for step-local policy deltas
+- If `retryOn` and `skipOn` are added later, they should apply as deltas on top of the selected profile allowlist rather than bypassing profile resolution
 - Compilation failures are non-retryable by default, including explicit Gradle compile-task failures with deterministic `Compilation failed/error` output
 - Gradle toolchain provisioning or dependency-resolution failures around `compile*` tasks should remain `UNKNOWN` unless a narrower built-in transient rule matches explicit network/service signals
 - High-confidence test assertion exception types and test-runner failure/error summaries, including pytest and Gradle failure summaries, should classify as `TEST_ASSERTION_FAILURE`
@@ -118,9 +121,9 @@ Update this file frequently as implementation moves forward.
 
 ### Milestone 7: Stabilization
 
-- [ ] Expand test coverage
+- [x] Expand test coverage
 - [ ] Tighten log messages
-- [ ] Validate initial rules against sample failure messages
+- [x] Validate initial rules against sample failure messages
 - [x] Document known limitations
 - [x] Prepare pilot-ready README/docs pass
 
@@ -128,17 +131,14 @@ Update this file frequently as implementation moves forward.
 
 Recommended next coding slice:
 
-1. Expand integration coverage for the run action, docs page, and resume/waiting behavior
-2. Tighten final console messages so success and terminal failure paths are easier to scan in long build logs
-3. Validate shipped rules against a curated sample set of real transient failure logs before calling the plugin pilot-ready
-4. Decide after pilot feedback whether constrained custom classification rules are still worth bringing into the V1 line
-5. If `retryOn` and `skipOn` are implemented later, make them `FailureType` policy controls inside the custom profile rather than a second raw-pattern system
+1. Tighten final console messages so success and terminal failure paths are easier to scan in long build logs
+2. Update pilot-facing docs and examples to reflect the current profile model, run-action behavior, and supported recovery semantics
+3. Decide after pilot feedback whether constrained custom classification rules are still worth bringing into the V1 line
+4. Keep `retryOn` and `skipOn` out of the MVP unless pilot users show a repeatable need for step-local policy deltas beyond named custom profiles
 
 ## Open Questions
 
 - Is the default `consoleContextLines = 200` a good balance between classifier signal and noisy log capture for typical Pipeline failures?
-- After constrained global custom rules land, do we still need step-level `retryOn` and `skipOn` in the near term?
-- If `retryOn` and `skipOn` do land, are profile-level `FailureType` controls enough, or is there a real user need for step-local overrides?
 - Should disabled built-in rules apply only to retryable message rules in the first version, or is there a safe case for allowing some non-retryable message rules to be suppressed too?
 
 ## Blockers
@@ -193,3 +193,11 @@ Recommended next coding slice:
 ### 2026-05-18
 
 - [x] Completed explicit system-configuration form validation by adding field-level checks for custom profile names and numeric settings, enforcing duplicate-name/reserved-name/empty-selection failures during custom profile submission, and extending focused configuration tests for the new validation paths
+
+### 2026-05-19
+
+- [x] Ensured direct-success Smart Retry runs still create a build-page run action and record a terminal success outcome
+- [x] Corrected build-page success narratives so retry-then-success runs no longer present the last failure as a terminal failure summary
+- [x] Added restart recovery coverage for `onResume()` and delayed retry rescheduling across Jenkins restarts
+- [x] Added curated classifier corpus tests with representative transient, deterministic, and conservative-negative sample logs
+- [x] Clarified that named custom profiles remain the primary MVP policy mechanism and that any future `retryOn` and `skipOn` controls should be profile-relative `FailureType` deltas rather than raw-pattern overrides

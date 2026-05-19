@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.8, pytest-8.3.2
+collected 412 items
+
+tests/test_release_plan.py ............................................. [ 12%]
+tests/test_suite_lookup.py .............................................. [ 24%]
+tests/test_stage_list.py ............................F................... [ 37%]
+
+=========================== short test summary info ============================
+FAILED tests/test_stage_list.py::test_stage_list_length - AssertionError: local stage_list length mismatch
+=================== 1 failed, 411 passed in 412.63s ===================

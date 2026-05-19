@@ -1,0 +1,5 @@
+[INFO] Downloading from artifactory: https://repo.example/artifactory/maven-public/org/example/core-lib/1.4.2/core-lib-1.4.2.jar
+[ERROR] Failed to execute goal on project plugin-platform: Could not resolve dependencies for project io.jenkins.plugins:plugin-platform:hpi:1.0-SNAPSHOT
+[ERROR] Could not transfer artifact org.example:core-lib:jar:1.4.2 from/to artifactory (https://repo.example/artifactory/maven-public): /home/jenkins/.m2/repository/org/example/core-lib/1.4.2/core-lib-1.4.2.jar.part (No such file or directory)
+[ERROR]
+[ERROR] -> [Help 1]

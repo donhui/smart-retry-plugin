@@ -15,8 +15,8 @@ smartRetry(profile: 'infra', maxRetries: 2, backoff: 'exponential') {
 The core value proposition is:
 
 - reduce manual rebuilds caused by transient CI failures
-- avoid wasting executors on deterministic failures such as compilation errors
-- make retry decisions explainable in logs and build UI
+- avoid blind retries on deterministic failures such as compilation errors
+- make retry decisions visible and easy to trust in logs and build UI
 
 ## 2. Problem Statement
 
@@ -34,7 +34,7 @@ These failures often succeed on a manual rebuild. Jenkins' built-in `retry {}` s
 - stable test assertion failures
 - non-idempotent deployment steps
 
-Smart Retry should be a conservative, explainable alternative focused on transient CI failures.
+Smart Retry should be a safer, failure-aware alternative focused on transient CI failures and avoiding blind retries.
 
 ## 3. Goals
 
@@ -80,11 +80,12 @@ Not a first-priority audience:
 
 One-line positioning:
 
-> A conservative, explainable retry step for transient Jenkins infrastructure failures.
+> Retry only the failures worth retrying.
 
 What makes it different from built-in `retry {}`:
 
 - failure-aware rather than unconditional
+- retries the right failures instead of every failure
 - safer defaults
 - profile-driven behavior
 - better observability
@@ -125,7 +126,13 @@ smartRetry(
 
 These should not be required for the first usable release.
 
-If they are added later, they should operate on classified `FailureType` values rather than raw log text.
+Current product direction:
+
+- named custom profiles should cover the first pilot and MVP release without requiring step-local `retryOn` and `skipOn`
+- if `retryOn` and `skipOn` are added later, they should operate on classified `FailureType` values rather than raw log text
+- if they are added later, they should apply as policy deltas on top of the selected profile:
+  - `retryOn` adds retryable `FailureType` values to the profile allowlist
+  - `skipOn` removes `FailureType` values from the profile allowlist
 
 ## 9. Failure Taxonomy
 
@@ -459,7 +466,7 @@ Responsibility boundary:
 
 - `disabledBuiltInRules` disables specific built-in rule ids without changing the meaning of other rules in the same `FailureType`
 - custom rules decide how raw exception/message patterns map into a `FailureType`
-- `retryOn` and `skipOn`, if introduced later, should decide which already-classified `FailureType` values a custom profile retries or blocks
+- `retryOn` and `skipOn`, if introduced later, should decide which already-classified `FailureType` values a selected profile retries or blocks
 - `retryOn` and `skipOn` should not accept raw regex or free-form message snippets
 
 ## 12. Retry Decision Flow
@@ -520,7 +527,7 @@ Current V1 global configuration supports:
 Follow-on configuration, if needed after pilot feedback, may support:
 
 - message-pattern based rules
-- profile-level `retryOn` and `skipOn`
+- profile-relative `retryOn` and `skipOn`
 
 Suggested first custom-rule evaluation order:
 
@@ -630,7 +637,7 @@ Expected layering in Phase 2:
 
 - built-in rule disablement narrows existing classifier behavior by stable rule id
 - custom rules extend classification
-- custom profile settings, including possible `retryOn` and `skipOn`, extend policy
+- custom profile settings, including possible profile-relative `retryOn` and `skipOn`, extend policy
 
 ### Phase 3
 
@@ -643,4 +650,4 @@ Expected layering in Phase 2:
 - Should the first implementation target only Pipeline or also expose any Freestyle integration?
 - How much log context can be safely captured without making classification brittle or expensive?
 - Should constrained custom rules remain part of the first pilot release, or shift to V2 after the core V1 experience is validated?
-- After constrained global custom rules exist, do `retryOn` and `skipOn` still provide enough additional value to justify Pipeline DSL complexity?
+- After pilot feedback, is there any recurring need for step-local policy deltas that named custom profiles cannot cover cleanly?

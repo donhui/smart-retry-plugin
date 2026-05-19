@@ -1,0 +1,4 @@
+[Pipeline] sh
++ docker pull jfrog.example/docker/ci-tool:2026.05
+Error response from daemon: Get "https://jfrog.example/v2/": read tcp 10.42.1.15:42862->100.13.11.11:443: read: connection reset by peer
+script returned exit code 1

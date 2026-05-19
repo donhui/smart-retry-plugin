@@ -59,6 +59,7 @@ public class SmartRetryStepExecution extends StepExecution {
     @Override
     public boolean start() throws Exception {
         resolveExecutionConfiguration();
+        initializeRunAction();
         startAttempt();
         return false;
     }
@@ -112,6 +113,7 @@ public class SmartRetryStepExecution extends StepExecution {
 
         @Override
         public void onSuccess(StepContext context, Object result) {
+            logFinalSuccess(context);
             markSuccess(context);
             context.onSuccess(result);
         }
@@ -143,6 +145,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 recordAttempt(context, settings.getProfile(), classification, decision);
 
                 if (decision.shouldRetry()) {
+                    logRetryScheduling(context, settings.getProfile(), classification, decision);
                     attemptNumber = decision.getNextAttemptNumber();
                     waitingUntilMillis = System.currentTimeMillis() + decision.getDelayMillis();
                     scheduleRetry(System.currentTimeMillis());
@@ -150,6 +153,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 }
 
                 // Final failure path.
+                logFinalFailure(context, settings.getProfile(), classification, decision);
                 setFinalOutcome(context, "FAILED");
             } catch (Exception e) {
                 LOGGER.log(Level.FINE, "smartRetry decision logging failed", e);
@@ -160,16 +164,10 @@ public class SmartRetryStepExecution extends StepExecution {
 
     private void recordAttempt(
             StepContext context, String profile, FailureClassification classification, RetryDecision decision) {
-        Run<?, ?> run;
-        try {
-            run = context.get(Run.class);
-        } catch (Exception e) {
+        SmartRetryRunAction action = getOrCreateRunAction(context);
+        if (action == null) {
             return;
         }
-        if (run == null) {
-            return;
-        }
-        SmartRetryRunAction action = SmartRetryRunAction.getOrCreate(run);
         action.setProfile(profile);
 
         boolean retried = decision.shouldRetry();
@@ -184,35 +182,21 @@ public class SmartRetryStepExecution extends StepExecution {
     }
 
     private void markSuccess(StepContext context) {
-        Run<?, ?> run;
-        try {
-            run = context.get(Run.class);
-        } catch (Exception e) {
+        SmartRetryRunAction action = getOrCreateRunAction(context);
+        if (action == null) {
             return;
         }
-        if (run == null) {
-            return;
-        }
-        SmartRetryRunAction action = run.getAction(SmartRetryRunAction.class);
-        if (action != null) {
-            action.setFinalOutcome("SUCCESS");
-        }
+        action.setProfile(resolvedSettings == null ? null : resolvedSettings.getProfile());
+        action.setFinalOutcome("SUCCESS");
     }
 
     private void setFinalOutcome(StepContext context, String outcome) {
-        Run<?, ?> run;
-        try {
-            run = context.get(Run.class);
-        } catch (Exception e) {
+        SmartRetryRunAction action = getOrCreateRunAction(context);
+        if (action == null) {
             return;
         }
-        if (run == null) {
-            return;
-        }
-        SmartRetryRunAction action = run.getAction(SmartRetryRunAction.class);
-        if (action != null) {
-            action.setFinalOutcome(outcome);
-        }
+        action.setProfile(resolvedSettings == null ? null : resolvedSettings.getProfile());
+        action.setFinalOutcome(outcome);
     }
 
     private void resolveExecutionConfiguration() {
@@ -302,5 +286,94 @@ public class SmartRetryStepExecution extends StepExecution {
                         },
                         remainingMillis,
                         TimeUnit.MILLISECONDS);
+    }
+
+    private void initializeRunAction() {
+        SmartRetryRunAction action = getOrCreateRunAction(getContext());
+        if (action == null) {
+            return;
+        }
+        action.setProfile(resolvedSettings == null ? null : resolvedSettings.getProfile());
+    }
+
+    @CheckForNull
+    private static SmartRetryRunAction getOrCreateRunAction(StepContext context) {
+        Run<?, ?> run;
+        try {
+            run = context.get(Run.class);
+        } catch (Exception e) {
+            return null;
+        }
+        if (run == null) {
+            return null;
+        }
+        return SmartRetryRunAction.getOrCreate(run);
+    }
+
+    private void logRetryScheduling(
+            StepContext context, String profile, FailureClassification classification, RetryDecision decision) {
+        logLine(
+                context,
+                "[smartRetry] scheduling profile="
+                        + profile
+                        + " classified="
+                        + classification.getType()
+                        + " nextAttempt="
+                        + decision.getNextAttemptNumber()
+                        + " delayMillis="
+                        + decision.getDelayMillis());
+    }
+
+    private void logFinalSuccess(StepContext context) {
+        int retriesUsed = Math.max(0, attemptNumber - 1);
+        String reason = retriesUsed == 0
+                ? "Body succeeded on first attempt"
+                : "Recovered after " + retriesUsed + " scheduled " + (retriesUsed == 1 ? "retry" : "retries");
+        logLine(
+                context,
+                "[smartRetry] completed profile="
+                        + effectiveProfileName()
+                        + " result=SUCCESS attempts="
+                        + attemptNumber
+                        + " retriesUsed="
+                        + retriesUsed
+                        + " reason=\""
+                        + reason
+                        + "\"");
+    }
+
+    private void logFinalFailure(
+            StepContext context, String profile, FailureClassification classification, RetryDecision decision) {
+        logLine(
+                context,
+                "[smartRetry] completed profile="
+                        + profile
+                        + " result=FAILED attempts="
+                        + attemptNumber
+                        + " classified="
+                        + classification.getType()
+                        + " reason=\""
+                        + decision.getReason()
+                        + "\"");
+    }
+
+    private void logLine(StepContext context, String line) {
+        try {
+            TaskListener listener = context.get(TaskListener.class);
+            if (listener != null) {
+                listener.getLogger().println(line);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "smartRetry summary logging failed", e);
+        }
+    }
+
+    private String effectiveProfileName() {
+        if (resolvedSettings == null
+                || resolvedSettings.getProfile() == null
+                || resolvedSettings.getProfile().isBlank()) {
+            return "conservative";
+        }
+        return resolvedSettings.getProfile();
     }
 }

@@ -1,0 +1,7 @@
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring root project 'opentelemetry-java-instrumentation'.
+> Could not determine the dependencies of task ':gradle-plugins:compileKotlin'.
+   > Cannot find a Java installation on your machine matching: {languageVersion=17, vendor=any vendor, implementation=vendor-specific}.
+      Some toolchain resolvers had provisioning failures: foojay (Unable to download toolchain matching the requirements from 'https://api.foojay.io/disco/v3.0/ids/example/redirect', due to: Could not get resource 'https://api.foojay.io/disco/v3.0/ids/example/redirect'.)

@@ -1,0 +1,4 @@
+[Pipeline] echo
+service contract assertion failed
+expected downstream outage marker 503 from contract fixture but received 200
+marking build as failed
