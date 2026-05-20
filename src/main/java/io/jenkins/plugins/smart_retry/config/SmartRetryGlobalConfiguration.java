@@ -23,6 +23,7 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.verb.POST;
 
 @Extension
 public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
@@ -149,6 +150,7 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
     }
 
     @Override
+    @POST
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
         validateCustomProfilesForm(json);
         req.bindJSON(this, json);

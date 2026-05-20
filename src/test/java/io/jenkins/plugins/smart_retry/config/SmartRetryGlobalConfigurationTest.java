@@ -1,6 +1,7 @@
 package io.jenkins.plugins.smart_retry.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.model.Descriptor;
@@ -15,6 +16,7 @@ import net.sf.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.kohsuke.stapler.verb.POST;
 
 @WithJenkins
 class SmartRetryGlobalConfigurationTest {
@@ -136,6 +138,13 @@ class SmartRetryGlobalConfigurationTest {
         assertEquals(
                 FormValidation.Kind.WARNING,
                 cfg.doCheckDisabledBuiltInRules("scm-remote-end-hung-up\nunknown-rule").kind);
+    }
+
+    @Test
+    void configureRequiresPost() throws Exception {
+        assertNotNull(SmartRetryGlobalConfiguration.class
+                .getMethod("configure", org.kohsuke.stapler.StaplerRequest2.class, JSONObject.class)
+                .getAnnotation(POST.class));
     }
 
     @Test

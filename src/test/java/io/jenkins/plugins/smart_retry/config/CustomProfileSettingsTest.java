@@ -1,6 +1,7 @@
 package io.jenkins.plugins.smart_retry.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.util.FormValidation;
@@ -39,5 +40,12 @@ class CustomProfileSettingsTest {
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("infra").kind);
         assertEquals(FormValidation.Kind.OK, descriptor.doCheckName("Network_Only").kind);
+    }
+
+    @Test
+    void keepsHelpFileAlignedWithCheckboxBinding() {
+        assertNotNull(
+                CustomProfileSettings.class.getResource(
+                        "/io/jenkins/plugins/smart_retry/config/CustomProfileSettings/help-retryableFailureTypeSelections.html"));
     }
 }

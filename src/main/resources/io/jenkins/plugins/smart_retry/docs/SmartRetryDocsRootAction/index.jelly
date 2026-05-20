@@ -7,7 +7,6 @@
                     <div class="jenkins-app-bar__main">
                         <h1 class="jenkins-app-bar__title">Smart Retry Docs</h1>
                         <p>Reference material for failure types, matched rules, and why Smart Retry will or will not reschedule a build.</p>
-                        <p><a href="${rootURL}/plugin/smart-retry">Plugin home</a></p>
                     </div>
                 </div>
             </div>
