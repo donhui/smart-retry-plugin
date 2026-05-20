@@ -551,8 +551,11 @@ This sequence minimizes the amount of Jenkins-specific plumbing needed before th
   - MVP answer: use a bounded tail of `Run` console log, scoped to the current attempt via a marker line (to support cases like `sh` where stderr does not appear in the thrown exception message).
 - How should the plugin serialize attempt state across Jenkins restarts during in-flight Pipeline execution?
   - MVP answer: keep only primitive attempt state in `StepExecution` (attempt number and next-run timestamp), keep scheduled tasks transient, and reschedule in `onResume()`.
-- Should persisted custom profile settings and message-pattern authoring land in the pilot-ready V1 line, or move to a cleaner V2 slice after validation of the current deterministic core?
 - After pilot feedback, is there any recurring need for step-local `retryOn` and `skipOn` controls beyond what named custom profiles can express?
+
+Resolved technical questions:
+
+- Persisted custom profile settings already ship in V1. Custom message-pattern rule authoring is deferred to V2 so the pilot release stays scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists.
 
 ## 17. Recommended First Coding Slice
 

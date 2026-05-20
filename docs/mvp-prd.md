@@ -649,5 +649,8 @@ Expected layering in Phase 2:
 
 - Should the first implementation target only Pipeline or also expose any Freestyle integration?
 - How much log context can be safely captured without making classification brittle or expensive?
-- Should constrained custom rules remain part of the first pilot release, or shift to V2 after the core V1 experience is validated?
 - After pilot feedback, is there any recurring need for step-local policy deltas that named custom profiles cannot cover cleanly?
+
+Resolved questions:
+
+- Constrained custom classification rules are deferred to V2. The pilot V1 line ships with built-in classifier rules, `disabledBuiltInRules`, and named custom profiles only. Custom message-pattern rule authoring will be reconsidered after pilot feedback shows whether built-in coverage plus profile allowlists leave real gaps.

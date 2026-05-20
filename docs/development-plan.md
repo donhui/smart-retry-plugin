@@ -173,7 +173,7 @@ Tasks:
 - add `SmartRetryGlobalConfiguration`
 - add built-in rule disablement by stable rule id
 - define shared retry defaults and named custom profiles in global config
-- defer constrained custom message patterns to follow-up work unless pilot feedback proves they are required for MVP adoption
+- defer constrained custom message patterns to post-MVP V2 work; reopen only if pilot feedback shows built-in rules plus named custom profiles leave real gaps
 - merge global defaults with step parameters
 - add config round-trip tests
 

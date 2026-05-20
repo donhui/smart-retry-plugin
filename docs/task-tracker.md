@@ -36,6 +36,7 @@ Update this file frequently as implementation moves forward.
 - Future custom rules should be additive and safety-bounded: built-in hard-stop behavior stays authoritative
 - Future configuration should also support `disabledBuiltInRules` so operators can turn off one built-in retryable rule without disabling the whole `FailureType`
 - Future custom retryable rules should only target `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, or `IDENTITY_PROVIDER_TRANSIENT`
+- Constrained custom classification-rule authoring is deferred to post-MVP V2 so the pilot release stays scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profiles
 - Future `retryOn` and `skipOn` controls should be profile-level `FailureType` policy settings, not raw text matching
 - Named custom profiles should remain the primary MVP policy mechanism; `retryOn` and `skipOn` are follow-up options only if pilot feedback shows a real need for step-local policy deltas
 - If `retryOn` and `skipOn` are added later, they should apply as deltas on top of the selected profile allowlist rather than bypassing profile resolution
@@ -108,7 +109,7 @@ Update this file frequently as implementation moves forward.
 
 - [x] Add `SmartRetryGlobalConfiguration`
 - [x] Add default profile configuration
-- [ ] Evaluate configurable custom rules as post-MVP follow-up work
+- [x] Confirm constrained custom classification rules are post-MVP V2 follow-up work
 - [x] Merge global defaults with step-level overrides
 - [x] Add configuration round-trip tests
 
@@ -133,7 +134,7 @@ Update this file frequently as implementation moves forward.
 Recommended next coding slice:
 
 1. Collect pilot feedback on profile usability, classifier gaps, and whether any additional high-confidence transient rules are still needed for V1
-2. Decide after pilot feedback whether constrained custom classification rules are still worth bringing into the V1 line
+2. Validate whether built-in classifier coverage plus named custom profiles leave any repeatable gaps that justify constrained custom classification rules in V2
 3. Keep `retryOn` and `skipOn` out of the MVP unless pilot users show a repeatable need for step-local policy deltas beyond named custom profiles
 
 ## Open Questions
@@ -207,3 +208,4 @@ Recommended next coding slice:
 - [x] Polished `smartRetry` authoring UX in Snippet Generator by adding a dedicated step form, field help, and descriptor-backed dropdowns/validation for built-in and custom profile selection
 - [x] Fixed default-value handling for optional step arguments so blank `profile` and `backoff` selections no longer persist as empty-string overrides when Jenkins should use global defaults
 - [x] Added focused step-configuration coverage and verified the Snippet Generator-related behavior, including the real `pipeline-syntax/generateSnippet` endpoint, with `mvn spotless:apply` and `mvn -Dtest=SmartRetryStepTest test`
+- [x] Closed the remaining MVP documentation evaluation item by deciding that constrained custom classification-rule authoring is post-MVP V2 work rather than part of the pilot V1 line
