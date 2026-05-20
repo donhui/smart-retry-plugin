@@ -1,10 +1,18 @@
 package io.jenkins.plugins.smart_retry.step;
 
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.action.SmartRetryRunAction;
 import io.jenkins.plugins.smart_retry.config.CustomProfileSettings;
 import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
+import java.net.URL;
 import java.util.List;
+import org.htmlunit.HttpMethod;
+import org.htmlunit.TextPage;
+import org.htmlunit.WebRequest;
 import org.htmlunit.html.HtmlPage;
+import org.jenkinsci.plugins.structs.describable.DescribableModel;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -64,6 +72,73 @@ class SmartRetryStepTest {
         WorkflowRun build = jenkins.buildAndAssertSuccess(job);
 
         jenkins.assertLogContains("configured smart retry", build);
+    }
+
+    @Test
+    void exposesSnippetGeneratorChoicesAndValidation(JenkinsRule jenkins) {
+        SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
+        cfg.setDefaultProfile("infra");
+        CustomProfileSettings release = new CustomProfileSettings();
+        release.setName("release");
+        release.setRetryableFailureTypes("NETWORK_TRANSIENT");
+        cfg.setCustomProfiles(List.of(release));
+        cfg.save();
+
+        SmartRetryStep.DescriptorImpl descriptor =
+                jenkins.jenkins.getDescriptorByType(SmartRetryStep.DescriptorImpl.class);
+
+        ListBoxModel profileItems = descriptor.doFillProfileItems();
+        Assertions.assertEquals("", profileItems.get(0).value);
+        Assertions.assertTrue(profileItems.get(0).name.contains("infra"));
+        Assertions.assertTrue(profileItems.stream().anyMatch(option -> "conservative".equals(option.value)));
+        Assertions.assertTrue(profileItems.stream().anyMatch(option -> "infra".equals(option.value)));
+        Assertions.assertTrue(profileItems.stream().anyMatch(option -> "release".equals(option.value)));
+
+        ListBoxModel backoffItems = descriptor.doFillBackoffItems();
+        Assertions.assertEquals("", backoffItems.get(0).value);
+        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> "fixed".equals(option.value)));
+        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> "exponential".equals(option.value)));
+
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("infra").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("release").kind);
+        Assertions.assertEquals(FormValidation.Kind.WARNING, descriptor.doCheckProfile("missing-profile").kind);
+
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckMaxRetries("").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckMaxRetries("2").kind);
+        Assertions.assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckMaxRetries("-1").kind);
+        Assertions.assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckMaxRetries("abc").kind);
+
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckInitialDelaySeconds("").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckInitialDelaySeconds("15").kind);
+        Assertions.assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckInitialDelaySeconds("-1").kind);
+    }
+
+    @Test
+    void omitsBlankOptionalSnippetArguments(JenkinsRule jenkins) throws Exception {
+        SmartRetryStep step = new SmartRetryStep();
+        step.setProfile("");
+        step.setBackoff("");
+
+        UninstantiatedDescribable ud = DescribableModel.of(SmartRetryStep.class).uninstantiate2(step);
+
+        Assertions.assertFalse(ud.getArguments().containsKey("profile"));
+        Assertions.assertFalse(ud.getArguments().containsKey("backoff"));
+    }
+
+    @Test
+    void snippetGeneratorOmitsBlankDefaultsInGeneratedScript(JenkinsRule jenkins) throws Exception {
+        jenkins.jenkins.setCrumbIssuer(null);
+
+        WebRequest request =
+                new WebRequest(new URL(jenkins.getURL(), "pipeline-syntax/generateSnippet"), HttpMethod.POST);
+        request.setAdditionalHeader("Content-Type", "application/x-www-form-urlencoded");
+        request.setRequestBody(
+                "json=%7B%22stapler-class%22%3A%22io.jenkins.plugins.smart_retry.step.SmartRetryStep%22%2C%22profile%22%3A%22%22%2C%22backoff%22%3A%22%22%7D");
+
+        TextPage page = jenkins.createWebClient().getPage(request);
+
+        Assertions.assertEquals("smartRetry {\n    // some block\n}", page.getContent());
     }
 
     @Test

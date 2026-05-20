@@ -22,7 +22,7 @@ Update this file frequently as implementation moves forward.
 ## Current Focus
 
 - Current milestone: `Milestone 7 - Stabilization`
-- Current objective: tighten final pilot-facing observability and release messaging around the core promise of retrying only the failures worth retrying now that restart recovery and curated sample-log validation are covered by tests
+- Current objective: keep the pilot-ready Smart Retry experience stable, documented, and easy to adopt
 
 ## Current Decisions
 
@@ -122,19 +122,19 @@ Update this file frequently as implementation moves forward.
 ### Milestone 7: Stabilization
 
 - [x] Expand test coverage
-- [ ] Tighten log messages
+- [x] Tighten log messages
 - [x] Validate initial rules against sample failure messages
 - [x] Document known limitations
 - [x] Prepare pilot-ready README/docs pass
+- [x] Polish Snippet Generator step configuration and defaults behavior
 
 ## Immediate Next Slice
 
 Recommended next coding slice:
 
-1. Tighten final console messages so success and terminal failure paths are easier to scan in long build logs
-2. Update pilot-facing docs and examples to reflect the current profile model, run-action behavior, and supported recovery semantics
-3. Decide after pilot feedback whether constrained custom classification rules are still worth bringing into the V1 line
-4. Keep `retryOn` and `skipOn` out of the MVP unless pilot users show a repeatable need for step-local policy deltas beyond named custom profiles
+1. Collect pilot feedback on profile usability, classifier gaps, and whether any additional high-confidence transient rules are still needed for V1
+2. Decide after pilot feedback whether constrained custom classification rules are still worth bringing into the V1 line
+3. Keep `retryOn` and `skipOn` out of the MVP unless pilot users show a repeatable need for step-local policy deltas beyond named custom profiles
 
 ## Open Questions
 
@@ -201,3 +201,9 @@ Recommended next coding slice:
 - [x] Added restart recovery coverage for `onResume()` and delayed retry rescheduling across Jenkins restarts
 - [x] Added curated classifier corpus tests with representative transient, deterministic, and conservative-negative sample logs
 - [x] Clarified that named custom profiles remain the primary MVP policy mechanism and that any future `retryOn` and `skipOn` controls should be profile-relative `FailureType` deltas rather than raw-pattern overrides
+
+### 2026-05-20
+
+- [x] Polished `smartRetry` authoring UX in Snippet Generator by adding a dedicated step form, field help, and descriptor-backed dropdowns/validation for built-in and custom profile selection
+- [x] Fixed default-value handling for optional step arguments so blank `profile` and `backoff` selections no longer persist as empty-string overrides when Jenkins should use global defaults
+- [x] Added focused step-configuration coverage and verified the Snippet Generator-related behavior, including the real `pipeline-syntax/generateSnippet` endpoint, with `mvn spotless:apply` and `mvn -Dtest=SmartRetryStepTest test`

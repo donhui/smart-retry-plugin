@@ -1,0 +1,18 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="Profile" field="profile">
+        <f:select />
+    </f:entry>
+
+    <f:advanced title="Optional overrides">
+        <f:entry title="Max retries" field="maxRetries">
+            <f:number clazz="number" min="0" />
+        </f:entry>
+        <f:entry title="Backoff" field="backoff">
+            <f:select />
+        </f:entry>
+        <f:entry title="Initial delay seconds" field="initialDelaySeconds">
+            <f:number clazz="number" min="0" />
+        </f:entry>
+    </f:advanced>
+</j:jelly>

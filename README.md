@@ -42,6 +42,8 @@ Available step parameters:
 - `backoff`
 - `initialDelaySeconds`
 
+Leave an optional step field unset when you want Jenkins to use the global Smart Retry default instead of a per-step override.
+
 ## Install
 
 Install the plugin in Jenkins, then restart Jenkins if your controller asks for it.
