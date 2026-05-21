@@ -55,6 +55,21 @@ public final class AttemptRecord implements Serializable {
         return delayMillis;
     }
 
+    public String getDelayDisplay() {
+        if (delayMillis == 0) {
+            return "0 ms";
+        }
+        if (delayMillis < 1000) {
+            return delayMillis + " ms";
+        }
+        long seconds = delayMillis / 1000;
+        long remainder = delayMillis % 1000;
+        if (remainder == 0) {
+            return seconds + " s";
+        }
+        return seconds + "." + String.format("%03d", remainder) + " s";
+    }
+
     public String getOutcome() {
         return outcome;
     }

@@ -52,21 +52,49 @@
                         <j:if test="${it.recoveredBuild}">
                             <tr>
                                 <th>Last retry-triggering failure type</th>
-                                <td>${it.lastRetryTriggeringFailureTypeDisplay}</td>
+                                <td>
+                                    <j:choose>
+                                        <j:when test="${it.lastRetryTriggeringFailureTypeDocsUrl}">
+                                            <a href="${rootURL}/${it.lastRetryTriggeringFailureTypeDocsUrl}">${it.lastRetryTriggeringFailureTypeDisplay}</a>
+                                        </j:when>
+                                        <j:otherwise>${it.lastRetryTriggeringFailureTypeDisplay}</j:otherwise>
+                                    </j:choose>
+                                </td>
                             </tr>
                             <tr>
                                 <th>Last retry-triggering rule</th>
-                                <td>${it.lastRetryTriggeringMatchedRuleDisplay}</td>
+                                <td>
+                                    <j:choose>
+                                        <j:when test="${it.lastRetryTriggeringMatchedRuleDocsUrl}">
+                                            <a href="${rootURL}/${it.lastRetryTriggeringMatchedRuleDocsUrl}">${it.lastRetryTriggeringMatchedRuleDisplay}</a>
+                                        </j:when>
+                                        <j:otherwise>${it.lastRetryTriggeringMatchedRuleDisplay}</j:otherwise>
+                                    </j:choose>
+                                </td>
                             </tr>
                         </j:if>
                         <j:if test="${!it.recoveredBuild and it.attemptsCount > 0}">
                             <tr>
                                 <th>Terminal failure type</th>
-                                <td>${it.terminalFailureTypeDisplay}</td>
+                                <td>
+                                    <j:choose>
+                                        <j:when test="${it.terminalFailureTypeDocsUrl}">
+                                            <a href="${rootURL}/${it.terminalFailureTypeDocsUrl}">${it.terminalFailureTypeDisplay}</a>
+                                        </j:when>
+                                        <j:otherwise>${it.terminalFailureTypeDisplay}</j:otherwise>
+                                    </j:choose>
+                                </td>
                             </tr>
                             <tr>
                                 <th>Terminal matched rule</th>
-                                <td>${it.terminalMatchedRuleDisplay}</td>
+                                <td>
+                                    <j:choose>
+                                        <j:when test="${it.terminalMatchedRuleDocsUrl}">
+                                            <a href="${rootURL}/${it.terminalMatchedRuleDocsUrl}">${it.terminalMatchedRuleDisplay}</a>
+                                        </j:when>
+                                        <j:otherwise>${it.terminalMatchedRuleDisplay}</j:otherwise>
+                                    </j:choose>
+                                </td>
                             </tr>
                         </j:if>
                     </tbody>
@@ -83,7 +111,7 @@
                                     <th align="left">Failure type</th>
                                     <th align="left">Matched rule</th>
                                     <th align="left">Decision</th>
-                                    <th align="left">Delay (ms)</th>
+                                    <th align="left">Delay</th>
                                     <th align="left">Outcome</th>
                                 </tr>
                             </thead>
@@ -111,7 +139,7 @@
                                         <td>
                                             <l:badge badge="${a.retryDecisionBadge}" />
                                         </td>
-                                        <td>${a.delayMillis}</td>
+                                        <td>${a.delayDisplay}</td>
                                         <td>
                                             <l:badge badge="${a.outcomeBadge}" />
                                         </td>

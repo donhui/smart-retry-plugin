@@ -310,6 +310,44 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         return builder.toString();
     }
 
+    @CheckForNull
+    public String getTerminalFailureTypeDocsUrl() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null || "SUCCESS".equals(finalOutcome)) {
+            return null;
+        }
+        return "smartRetryDocs#tab-details";
+    }
+
+    @CheckForNull
+    public String getTerminalMatchedRuleDocsUrl() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null || "SUCCESS".equals(finalOutcome)) {
+            return null;
+        }
+        String anchor = attempt.getMatchedRuleDocumentationAnchor();
+        return anchor != null ? "smartRetryDocs#" + anchor : null;
+    }
+
+    @CheckForNull
+    public String getLastRetryTriggeringFailureTypeDocsUrl() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null) {
+            return null;
+        }
+        return "smartRetryDocs#tab-details";
+    }
+
+    @CheckForNull
+    public String getLastRetryTriggeringMatchedRuleDocsUrl() {
+        AttemptRecord attempt = getTerminalAttempt();
+        if (attempt == null) {
+            return null;
+        }
+        String anchor = attempt.getMatchedRuleDocumentationAnchor();
+        return anchor != null ? "smartRetryDocs#" + anchor : null;
+    }
+
     private static String pluralize(String word, int count) {
         if (count == 1) {
             return word;
