@@ -1,0 +1,119 @@
+/* Smart Retry docs page styles */
+
+/* ---------- Tab bar ---------- */
+.sr-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--light-grey, #e0e0e0);
+    margin-bottom: 16px;
+}
+
+.sr-tab-btn {
+    padding: 8px 18px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: var(--text-color-secondary, #555);
+    margin-bottom: -2px;
+}
+
+.sr-tab-btn:hover {
+    color: var(--text-color, #333);
+}
+
+.sr-tab-btn.sr-tab-active {
+    border-bottom-color: var(--focus-input-border, #1e73be);
+    color: var(--focus-input-border, #1e73be);
+}
+
+.sr-tab-panel {
+    display: none;
+}
+
+.sr-tab-panel.sr-tab-visible {
+    display: block;
+}
+
+/* ---------- Master-Detail layout ---------- */
+.sr-master-detail {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--light-grey, #e0e0e0);
+    border-radius: 4px;
+    min-height: 300px;
+}
+
+.sr-master {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--light-grey, #e0e0e0);
+    overflow-y: auto;
+}
+
+.sr-master-item {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    border: none;
+    border-left: 3px solid transparent;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9em;
+    color: var(--text-color, #333);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sr-master-item:hover {
+    background: var(--button-background, #f5f5f5);
+}
+
+.sr-master-item.sr-master-active {
+    background: var(--button-background, #f0f6ff);
+    border-left-color: var(--focus-input-border, #1e73be);
+    font-weight: 600;
+}
+
+.sr-detail {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+
+.sr-detail-panel {
+    display: none;
+}
+
+.sr-detail-panel.sr-detail-visible {
+    display: block;
+}
+
+/* ---------- Rules filter bar ---------- */
+.sr-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sr-filter-bar label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.sr-filter-bar select {
+    padding: 5px 10px;
+    border: 1px solid var(--light-grey, #ccc);
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.sr-rules-table tr.sr-row-hidden {
+    display: none;
+}
+

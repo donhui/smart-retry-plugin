@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.model.RootAction;
 import io.jenkins.plugins.smart_retry.model.SmartRetryReferenceCatalog;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Extension
 public final class SmartRetryDocsRootAction implements RootAction {
@@ -33,5 +34,11 @@ public final class SmartRetryDocsRootAction implements RootAction {
 
     public List<SmartRetryReferenceCatalog.MatchedRuleGroup> getMatchedRuleGroups() {
         return SmartRetryReferenceCatalog.matchedRuleGroups();
+    }
+
+    public List<String> getFailureTypeNames() {
+        return SmartRetryReferenceCatalog.failureTypes().stream()
+                .map(SmartRetryReferenceCatalog.FailureTypeDoc::getName)
+                .collect(Collectors.toList());
     }
 }

@@ -15,15 +15,25 @@ class SmartRetryDocsRootActionTest {
 
         String text = page.asNormalizedText();
         String html = page.asXml();
+        // App bar title
         Assertions.assertTrue(text.contains("Smart Retry Docs"));
-        Assertions.assertTrue(text.contains("Quick Guide"));
-        Assertions.assertTrue(text.contains("Common Cases"));
-        Assertions.assertTrue(text.contains("Quick Comparison"));
-        Assertions.assertTrue(text.contains("Failure Type Details"));
-        Assertions.assertTrue(text.contains("AGENT_LOST"));
-        Assertions.assertTrue(text.contains("Start with one of these grouped entry points"));
-        Assertions.assertTrue(html.contains("group-agent-lost"));
-        Assertions.assertTrue(html.contains("rule-agent-remoting-channel-closed"));
+        // Tab bar labels
+        Assertions.assertTrue(html.contains("data-tab=\"tab-overview\""));
+        Assertions.assertTrue(html.contains("data-tab=\"tab-details\""));
+        Assertions.assertTrue(html.contains("data-tab=\"tab-rules\""));
+        // Quick Comparison tab: failure types appear in table
+        Assertions.assertTrue(html.contains("id=\"failure-type-agent-lost\""));
+        Assertions.assertTrue(html.contains("id=\"failure-type-scm-transient\""));
+        // Failure Type Details tab: master-detail panels present
+        Assertions.assertTrue(html.contains("id=\"detail-failure-type-agent-lost\""));
+        Assertions.assertTrue(html.contains("id=\"detail-failure-type-scm-transient\""));
+        // Cross-link from detail panel to rules tab with filter
+        Assertions.assertTrue(html.contains("data-filter=\"AGENT_LOST\""));
+        // Matched Rules tab: rule rows with data-failure-type attribute
+        Assertions.assertTrue(html.contains("id=\"rule-agent-remoting-channel-closed\""));
+        Assertions.assertTrue(html.contains("data-failure-type=\"SCM_TRANSIENT\""));
         Assertions.assertTrue(html.contains("Trigger kind"));
+        // Filter select populated with failure type names
+        Assertions.assertTrue(html.contains("sr-rules-filter"));
     }
 }

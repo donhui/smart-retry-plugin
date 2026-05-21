@@ -261,18 +261,21 @@ class SmartRetryStepTest {
     void exposesDocumentationPage(JenkinsRule jenkins) throws Exception {
         HtmlPage page = jenkins.createWebClient().goTo("smartRetryDocs");
 
-        Assertions.assertTrue(page.asNormalizedText().contains("Smart Retry Docs"));
-        Assertions.assertTrue(page.asNormalizedText().contains("Failure Types"));
-        Assertions.assertTrue(page.asNormalizedText().contains("Matched Rules"));
-        Assertions.assertTrue(page.asNormalizedText().contains("SCM_TRANSIENT"));
-        Assertions.assertTrue(page.asNormalizedText().contains("scm-could-not-resolve-host"));
-        Assertions.assertTrue(page.asNormalizedText().contains("network-could-not-resolve-host"));
-        Assertions.assertTrue(page.asNormalizedText().contains("artifact-partial-download"));
-        Assertions.assertTrue(page.asNormalizedText().contains("test-pytest-failures-summary"));
-        Assertions.assertTrue(page.asNormalizedText().contains("gradle-compile-task-failed"));
-        Assertions.assertTrue(page.asNormalizedText().contains("java-compiler-error"));
-        Assertions.assertTrue(page.asNormalizedText().contains("kotlin-compiler-error"));
-        Assertions.assertTrue(page.asNormalizedText().contains("test-gradle-failures-summary"));
+        String text = page.asNormalizedText();
+        String html = page.asXml();
+        Assertions.assertTrue(text.contains("Smart Retry Docs"));
+        Assertions.assertTrue(text.contains("Failure Type Details"));
+        Assertions.assertTrue(text.contains("Matched Rules"));
+        Assertions.assertTrue(html.contains("data-failure-type=\"SCM_TRANSIENT\""));
+        // Rule names appear as id="rule-..." attributes in the HTML, not in visible text
+        Assertions.assertTrue(html.contains("rule-scm-could-not-resolve-host"));
+        Assertions.assertTrue(html.contains("rule-network-could-not-resolve-host"));
+        Assertions.assertTrue(html.contains("rule-artifact-partial-download"));
+        Assertions.assertTrue(html.contains("rule-test-pytest-failures-summary"));
+        Assertions.assertTrue(html.contains("rule-gradle-compile-task-failed"));
+        Assertions.assertTrue(html.contains("rule-java-compiler-error"));
+        Assertions.assertTrue(html.contains("rule-kotlin-compiler-error"));
+        Assertions.assertTrue(html.contains("rule-test-gradle-failures-summary"));
     }
 
     @Test

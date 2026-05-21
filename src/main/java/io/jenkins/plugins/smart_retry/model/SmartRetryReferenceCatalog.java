@@ -580,6 +580,10 @@ public final class SmartRetryReferenceCatalog {
         public boolean isDefaultExpanded() {
             return "AGENT_LOST".equals(name) || "SCM_TRANSIENT".equals(name) || "NETWORK_TRANSIENT".equals(name);
         }
+
+        public String getMatchedRuleGroupAnchorId() {
+            return "group-" + slugify(name);
+        }
     }
 
     public static final class MatchedRuleDoc {
@@ -656,6 +660,10 @@ public final class SmartRetryReferenceCatalog {
 
         public Badge getDisableableBadge() {
             return yesNoBadge("Yes".equals(disableable), "Disableable", "Fixed");
+        }
+
+        public boolean isTriggerCode() {
+            return "Message pattern".equals(triggerKind) || "Exception type".equals(triggerKind);
         }
 
         public String getTriggerPreview() {
