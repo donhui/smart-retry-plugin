@@ -45,14 +45,6 @@ Goal:
 
 - remove sample-plugin leftovers and rename the project clearly
 
-Tasks:
-
-- update `pom.xml` plugin name and metadata
-- replace sample package naming
-- remove `HelloWorldBuilder` scaffold
-- clean up sample resources and tests
-- update `README.md` to reflect Smart Retry direction
-
 Exit criteria:
 
 - repository builds cleanly
@@ -64,18 +56,6 @@ Goal:
 
 - establish the public Smart Retry API shape
 
-Tasks:
-
-- add `SmartRetryStep`
-- add `SmartRetryStepExecution`
-- define step parameters:
-  - `profile`
-  - `maxRetries`
-  - `backoff`
-  - `initialDelaySeconds`
-- register the Pipeline step function name as `smartRetry`
-- add a minimal Pipeline integration test that invokes the step
-
 Exit criteria:
 
 - a Pipeline can call `smartRetry { ... }`
@@ -86,23 +66,6 @@ Exit criteria:
 Goal:
 
 - classify failures into stable internal categories
-
-Tasks:
-
-- define `FailureClassification`
-- define `FailureType` enum
-- implement `FailureClassifier`
-- implement initial message-pattern rules
-- implement initial exception-based rules
-- add unit tests for:
-  - `AGENT_LOST`
-  - `SCM_TRANSIENT`
-  - `NETWORK_TRANSIENT`
-  - `ARTIFACT_REPO_TRANSIENT`
-  - `IDENTITY_PROVIDER_TRANSIENT`
-  - `PIPELINE_LOGIC_FAILURE`
-  - `COMPILATION_FAILURE`
-  - `UNKNOWN`
 
 Exit criteria:
 
@@ -125,17 +88,6 @@ Goal:
 
 - convert classification results into retry decisions
 
-Tasks:
-
-- define `RetryPolicy`
-- define `RetryDecision`
-- add built-in profiles:
-  - `conservative`
-  - `infra`
-- support named custom profiles
-- implement fixed and exponential backoff
-- add unit tests for profile behavior and attempt limits
-
 Exit criteria:
 
 - classification and policy are separate
@@ -147,16 +99,6 @@ Goal:
 
 - make the Pipeline step actually retry according to policy
 
-Tasks:
-
-- capture body failures from the step execution
-- classify the failure
-- capture bounded console log context per attempt for classifier matching (to support `sh`-style failures)
-- query policy
-- wait according to backoff
-- rerun until success or exhaustion
-- emit console messages for each decision
-
 Exit criteria:
 
 - retry flow works in integration tests
@@ -167,15 +109,6 @@ Exit criteria:
 Goal:
 
 - support central administration and Jenkinsfile overrides
-
-Tasks:
-
-- add `SmartRetryGlobalConfiguration`
-- add built-in rule disablement by stable rule id
-- define shared retry defaults and named custom profiles in global config
-- defer constrained custom message patterns to post-MVP V2 work; reopen only if pilot feedback shows built-in rules plus named custom profiles leave real gaps
-- merge global defaults with step parameters
-- add config round-trip tests
 
 Exit criteria:
 
@@ -191,17 +124,6 @@ Goal:
 
 - make plugin behavior visible and explainable
 
-Tasks:
-
-- add `SmartRetryRunAction`
-- store attempt history:
-  - attempt number
-  - failure type
-  - retry decision
-  - delay
-  - final outcome
-- expose a simple build-page summary
-
 Exit criteria:
 
 - a build page shows whether Smart Retry was used
@@ -212,14 +134,6 @@ Exit criteria:
 Goal:
 
 - prepare for external use
-
-Tasks:
-
-- expand integration test coverage
-- review null-safety and serialization concerns
-- tighten log messages
-- validate default rules against sample failure logs
-- document known limitations
 
 Exit criteria:
 

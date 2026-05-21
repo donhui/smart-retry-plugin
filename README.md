@@ -94,14 +94,6 @@ Leave an optional step field unset when you want Jenkins to use the global Smart
 
 You can also generate a starting `smartRetry` snippet from Jenkins `Pipeline Syntax` -> `Snippet Generator`.
 
-## Current MVP Scope
-
-- designed for Jenkins Pipeline usage in the MVP
-- applies only to the block you wrap with `smartRetry { ... }`; it does not automatically affect the rest of the Pipeline
-- keeps the default behavior conservative and retries only high-confidence transient infrastructure failures
-- does not provide step-local `retryOn` / `skipOn` controls or custom message-pattern classification rules in the MVP
-- works best around small, idempotent CI blocks
-
 ## Common Examples
 
 Retry only the narrowest infrastructure failures:

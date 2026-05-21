@@ -57,24 +57,7 @@ This keeps the step API, policy logic, and UI concerns separate.
 
 Enum for internal failure categories.
 
-Initial values:
-
-- `AGENT_LOST`
-- `SCM_TRANSIENT`
-- `NETWORK_TRANSIENT`
-- `ARTIFACT_REPO_TRANSIENT`
-- `IDENTITY_PROVIDER_TRANSIENT`
-- `USER_ABORT`
-- `PIPELINE_LOGIC_FAILURE`
-- `COMPILATION_FAILURE`
-- `TEST_ASSERTION_FAILURE`
-- `DEPLOYMENT_FAILURE`
-- `UNKNOWN`
-
-Current V1 implementation note:
-
-- the classifier currently emits `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, `IDENTITY_PROVIDER_TRANSIENT`, `PIPELINE_LOGIC_FAILURE`, `COMPILATION_FAILURE`, `TEST_ASSERTION_FAILURE`, `USER_ABORT`, and `UNKNOWN`
-- the remaining enum values are kept now to stabilize the taxonomy and docs, but they still need explicit rules before they should appear in runtime behavior
+See [`mvp-prd.md §9`](./mvp-prd.md) for the full taxonomy, retryable/non-retryable classification, and V1 implementation notes.
 
 ## `FailureClassification`
 
@@ -227,16 +210,8 @@ Classifier behavior:
 - default to `UNKNOWN`
 - keep the initial implementation explicit and readable rather than rule-engine heavy
 - if custom rules are added later, keep them additive and explainable rather than turning the classifier into an unrestricted rule engine
-- use surrounding operation context when a signal is ambiguous; for example, generic `could not resolve host` should map to `NETWORK_TRANSIENT` unless explicit SCM context is present
-- treat Maven-style `Could not transfer artifact ... .jar.part (No such file or directory)` as `ARTIFACT_REPO_TRANSIENT` because the dominant signal is an interrupted repository download
-- require explicit artifact-repository context before classifying generic `503/504` or `tls handshake timeout` signals as `ARTIFACT_REPO_TRANSIENT`
-- prefer explicit HTTP-style 5xx phrases such as `503 Service Unavailable` or `status code 503` over bare numeric status codes when classifying generic network failures
-- require explicit external-service context before classifying `connection refused` as `NETWORK_TRANSIENT`
-- require explicit external-service context before classifying `connection reset` as `NETWORK_TRANSIENT`
-- do not classify generic log-level `broken pipe` text as retryable unless exception context makes the transport failure explicit
-- require narrow LDAP reauthentication context before classifying HTTP-style `401` responses as `IDENTITY_PROVIDER_TRANSIENT`
-- require explicit SCM context before classifying `curl 56`, `unexpected disconnect`, `early EOF`, or `index-pack failed` as `SCM_TRANSIENT`
-- classify high-confidence TypeScript, Go, and C/C++ compiler diagnostics as `COMPILATION_FAILURE`, but leave generic wrapper failures such as bare `npm ERR!` as `UNKNOWN`
+
+For the full set of per-signal classification rules and context requirements, see [`mvp-prd.md §10`](./mvp-prd.md).
 
 ## `ClassificationRule`
 
@@ -284,6 +259,8 @@ Policy rules:
 - hard-stop failure types should never retry
 - `UNKNOWN` should never retry
 - if attempts are exhausted, fail immediately
+
+For the authoritative list of non-retryable failure types, see [`mvp-prd.md §15`](./mvp-prd.md).
 
 ## `BackoffStrategy`
 
@@ -343,13 +320,7 @@ Suggested fields:
 - `boolean enabled`
 - `String description`
 
-First implementation constraints:
-
-- allow disabling only built-in retryable message rules, not hard-stop exception semantics
-- allow only additive message-pattern rules
-- allow only `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, and `IDENTITY_PROVIDER_TRANSIENT`
-- reject attempts to map custom rules to `USER_ABORT`, `PIPELINE_LOGIC_FAILURE`, `COMPILATION_FAILURE`, `TEST_ASSERTION_FAILURE`, `DEPLOYMENT_FAILURE`, or `UNKNOWN`
-- keep built-in rules present even when custom rules are configured
+First implementation constraints: see [`mvp-prd.md §11.4`](./mvp-prd.md) for the full safety boundaries and allowed target types.
 
 Responsibility split:
 
@@ -389,17 +360,7 @@ Current V1 implementation note:
 - unknown profile names now fail fast instead of silently falling back to `conservative`
 - broader message-pattern authoring remains future work
 
-Suggested custom-rule precedence:
-
-1. built-in hard-stop exception rules
-2. built-in rule disable check for message-based rules
-3. custom non-retryable rules
-4. built-in non-retryable message rules
-5. built-in retryable rules
-6. custom retryable rules
-7. `UNKNOWN`
-
-This ordering keeps explicit safety behavior ahead of user-added retry rules while still allowing administrators to narrow behavior either by disabling a specific built-in rule or by tightening local policies.
+For the custom-rule evaluation order, see [`mvp-prd.md §14`](./mvp-prd.md).
 
 Suggested future `retryOn` / `skipOn` semantics:
 
@@ -506,17 +467,7 @@ Verify:
 
 ## 13. Plugin Skeleton Conversion Plan
 
-The repository has already completed the initial generated-plugin cleanup and now uses Smart Retry-specific packages, tests, and plugin metadata.
-
-Historical conversion steps:
-
-1. remove `HelloWorldBuilder` and its resources
-2. replace sample tests with Smart Retry tests
-3. create the new package tree under `io.jenkins.plugins.smart_retry`
-4. update plugin metadata in `pom.xml`
-5. update `README.md`
-
-This cleanup is complete and should stay complete as the repository evolves.
+The generated-plugin cleanup is complete. The repository uses Smart Retry-specific packages, tests, and plugin metadata under `io.jenkins.plugins.smart_retry`.
 
 ## 14. Dependency Direction
 
@@ -529,22 +480,7 @@ Current V1 already includes the dependencies needed for:
 
 Future dependency review should only be reopened if custom rule authoring or richer UI surfaces materially expand the plugin scope.
 
-## 15. Implementation Sequence
-
-Recommended order:
-
-1. clean sample scaffold
-2. create core model classes
-3. create classifier and policy with unit tests
-4. implement step descriptor and execution skeleton
-5. wire retry loop
-6. add global configuration
-7. add build summary action
-8. expand tests and docs
-
-This sequence minimizes the amount of Jenkins-specific plumbing needed before the core logic is reliable.
-
-## 16. Open Technical Questions
+## 15. Open Technical Questions
 
 - Which exact Pipeline step base classes and callback patterns are the best fit for a body step in this plugin?
 - What log context is realistically available from the failing body execution?
@@ -556,18 +492,3 @@ This sequence minimizes the amount of Jenkins-specific plumbing needed before th
 Resolved technical questions:
 
 - Persisted custom profile settings already ship in V1. Custom message-pattern rule authoring is deferred to V2 so the pilot release stays scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists.
-
-## 17. Recommended First Coding Slice
-
-The best first implementation slice is:
-
-- remove sample code
-- create `FailureType`
-- create `FailureClassification`
-- create `RetryDecision`
-- create `RetryPolicy`
-- create tests for `conservative` and `infra`
-
-Why:
-
-- this establishes the plugin's behavioral core before dealing with Pipeline callback complexity

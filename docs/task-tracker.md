@@ -26,37 +26,16 @@ Update this file frequently as implementation moves forward.
 
 ## Current Decisions
 
-- Smart Retry is Pipeline-first for the MVP
-- The public Pipeline step name should be `smartRetry`
-- The user-facing product message should stay centered on avoiding blind retries and retrying only failures worth retrying
-- The default retry profile should be `conservative`
-- The current global configuration surface now includes `defaultProfile`, `consoleContextLines`, shared retry defaults, named custom profiles, and `disabledBuiltInRules`
-- `conservative` and `infra` are fixed built-in profiles, while custom profiles are named allowlists over the retryable transient `FailureType` values
-- Unknown profile names should fail fast instead of silently falling back to `conservative`
-- Future custom rules should be additive and safety-bounded: built-in hard-stop behavior stays authoritative
-- Future configuration should also support `disabledBuiltInRules` so operators can turn off one built-in retryable rule without disabling the whole `FailureType`
-- Future custom retryable rules should only target `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, or `IDENTITY_PROVIDER_TRANSIENT`
-- Constrained custom classification-rule authoring is deferred to post-MVP V2 so the pilot release stays scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profiles
-- Future `retryOn` and `skipOn` controls should be profile-level `FailureType` policy settings, not raw text matching
-- Named custom profiles should remain the primary MVP policy mechanism; `retryOn` and `skipOn` are follow-up options only if pilot feedback shows a real need for step-local policy deltas
-- If `retryOn` and `skipOn` are added later, they should apply as deltas on top of the selected profile allowlist rather than bypassing profile resolution
-- Compilation failures are non-retryable by default, including explicit Gradle compile-task failures with deterministic `Compilation failed/error` output
-- Gradle toolchain provisioning or dependency-resolution failures around `compile*` tasks should remain `UNKNOWN` unless a narrower built-in transient rule matches explicit network/service signals
-- High-confidence test assertion exception types and test-runner failure/error summaries, including pytest and Gradle failure summaries, should classify as `TEST_ASSERTION_FAILURE`
-- Explicit compilation-failure wording, `cannot find symbol`, and high-confidence TypeScript, Go, and C/C++ compiler diagnostics should classify as `COMPILATION_FAILURE`
-- Generic wrapper failures such as bare `npm ERR!` should remain `UNKNOWN` unless the log also contains a high-confidence compiler diagnostic
-- `UNKNOWN` failures are non-retryable by default
-- Missing DSL methods, missing properties, script-security rejections, and WorkflowScript/Jenkinsfile startup failures should classify as `PIPELINE_LOGIC_FAILURE`
-- Generic `could not resolve host` signals should classify as `NETWORK_TRANSIENT` unless explicit SCM context is present
-- Maven `.jar.part` partial-download failures should classify as `ARTIFACT_REPO_TRANSIENT`
-- Generic `503/504` and `tls handshake timeout` signals should classify as `NETWORK_TRANSIENT` unless explicit artifact-repository context is present
-- Generic 5xx matching should prefer explicit HTTP-style phrases rather than bare numeric status codes
-- `connection refused` should classify as `NETWORK_TRANSIENT` only when explicit external-service context is present
-- `connection reset` should classify as `NETWORK_TRANSIENT` only when explicit external-service context is present
-- Generic `broken pipe` log text alone should stay non-retryable unless exception context makes the transport failure explicit
-- LDAP reauthentication failures should use a dedicated `IDENTITY_PROVIDER_TRANSIENT` class, while generic `401` responses remain non-retryable
-- Git transport interruption failures should classify as `SCM_TRANSIENT` only when explicit clone/fetch/checkout context is present
-- The initial target package should be `io.jenkins.plugins.smart_retry`
+Product behavior and failure taxonomy decisions are recorded in [`mvp-prd.md`](./mvp-prd.md).
+
+Implementation decisions made during delivery:
+
+- Unknown profile names fail fast at step startup instead of silently falling back to `conservative`
+- The global configuration surface ships as `defaultProfile`, `consoleContextLines`, shared retry timing defaults, named custom profiles, and `disabledBuiltInRules`
+- Constrained custom classification-rule authoring is deferred to post-MVP V2; the pilot release is scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists
+- Attempt-scoped console log context is captured per-attempt using a bounded tail of `Run` console log, scoped via a marker line, to support `sh`-style failures where stderr does not appear in the thrown exception
+- In-flight Pipeline execution survives Jenkins restarts by keeping only primitive attempt state in `StepExecution` and rescheduling in `onResume()`
+- The initial target package is `io.jenkins.plugins.smart_retry`
 
 ## Milestone Tracker
 
