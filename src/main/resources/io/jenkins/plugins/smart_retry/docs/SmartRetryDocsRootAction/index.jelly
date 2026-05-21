@@ -11,64 +11,218 @@
                 </div>
             </div>
 
+            <l:card title="Quick Guide">
+                <p>Start with the quick comparison to see which profiles retry which failure types. Expand the detailed sections only when you need the implementation notes or exact rule wording.</p>
+                <ol>
+                    <li><a href="#failure-type-overview">Quick comparison</a> for a profile-level answer.</li>
+                    <li><a href="#failure-type-details">Failure type details</a> when you want the rationale and current implementation notes.</li>
+                    <li><a href="#matched-rule-groups">Matched rule groups</a> only when you need exact classifier rule wording.</li>
+                </ol>
+            </l:card>
+
+            <l:card title="Common Cases">
+                <p>If you only need a quick explanation, these are the sections most people look for first.</p>
+                <ul>
+                    <li><a href="#failure-type-agent-lost-details">AGENT_LOST</a>: agent, pod, node, or remoting channel disappeared mid-build.</li>
+                    <li><a href="#failure-type-scm-transient-details">SCM_TRANSIENT</a>: checkout or fetch failed because the SCM side dropped or interrupted the connection.</li>
+                    <li><a href="#failure-type-pipeline-logic-failure-details">PIPELINE_LOGIC_FAILURE</a>: Jenkinsfile or Pipeline logic is broken and should fail fast.</li>
+                </ul>
+            </l:card>
+
             <l:card title="Failure Types">
                 <p>These are the failure classes defined by Smart Retry. Retry behavior depends on both classification confidence and the active retry profile.</p>
+                <h3 id="failure-type-overview">Quick Comparison</h3>
                 <table class="pane sortable">
                     <thead>
                         <tr>
                             <th align="left">Failure type</th>
-                            <th align="left">Meaning</th>
-                            <th align="left">Current implementation</th>
                             <th align="left">Conservative</th>
                             <th align="left">Infra</th>
                             <th align="left">Custom profiles</th>
-                            <th align="left">Why it does or does not retry</th>
+                            <th align="left">Meaning</th>
                         </tr>
                     </thead>
                     <tbody>
                         <j:forEach var="d" items="${it.failureTypes}">
                             <tr id="${d.anchorId}">
-                                <td><strong>${d.name}</strong></td>
+                                <td><a href="#${d.anchorId}-details"><strong>${d.name}</strong></a></td>
+                                <td><l:badge badge="${d.conservativeBadge}" /></td>
+                                <td><l:badge badge="${d.infraBadge}" /></td>
+                                <td><l:badge badge="${d.customBadge}" /></td>
                                 <td>${d.meaning}</td>
-                                <td>${d.currentImplementation}</td>
-                                <td>${d.conservativeBehavior}</td>
-                                <td>${d.infraBehavior}</td>
-                                <td>${d.customBehavior}</td>
-                                <td>${d.rationale}</td>
                             </tr>
                         </j:forEach>
                     </tbody>
                 </table>
+
+                <h3 id="failure-type-details">Failure Type Details</h3>
+                <j:forEach var="d" items="${it.failureTypes}">
+                    <j:choose>
+                        <j:when test="${d.defaultExpanded}">
+                            <details id="${d.anchorId}-details" open="open">
+                                <summary><strong>${d.name}</strong>: ${d.meaning}</summary>
+                                <table class="pane">
+                                    <tbody>
+                                        <tr>
+                                            <th align="left">Conservative</th>
+                                            <td><l:badge badge="${d.conservativeBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Infra</th>
+                                            <td><l:badge badge="${d.infraBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Custom profiles</th>
+                                            <td><l:badge badge="${d.customBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Why it does or does not retry</th>
+                                            <td>${d.rationale}</td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Current implementation</th>
+                                            <td>${d.currentImplementation}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </details>
+                        </j:when>
+                        <j:otherwise>
+                            <details id="${d.anchorId}-details">
+                                <summary><strong>${d.name}</strong>: ${d.meaning}</summary>
+                                <table class="pane">
+                                    <tbody>
+                                        <tr>
+                                            <th align="left">Conservative</th>
+                                            <td><l:badge badge="${d.conservativeBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Infra</th>
+                                            <td><l:badge badge="${d.infraBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Custom profiles</th>
+                                            <td><l:badge badge="${d.customBadge}" /></td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Why it does or does not retry</th>
+                                            <td>${d.rationale}</td>
+                                        </tr>
+                                        <tr>
+                                            <th align="left">Current implementation</th>
+                                            <td>${d.currentImplementation}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </details>
+                        </j:otherwise>
+                    </j:choose>
+                </j:forEach>
             </l:card>
 
             <l:card title="Matched Rules">
-                <p>These are the deterministic rules the current classifier can emit today. Exception-based rules fire before message-pattern rules. The Disableable column shows whether a rule can be skipped via disabledBuiltInRules.</p>
-                <table class="pane sortable">
-                    <thead>
-                        <tr>
-                            <th align="left">Matched rule</th>
-                            <th align="left">Emits failure type</th>
-                            <th align="left">Trigger kind</th>
-                            <th align="left">Trigger</th>
-                            <th align="left">Classifier result</th>
-                            <th align="left">Disableable</th>
-                            <th align="left">Why</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <j:forEach var="d" items="${it.matchedRules}">
-                            <tr id="${d.anchorId}">
-                                <td><strong>${d.name}</strong></td>
-                                <td><a href="#${d.failureTypeAnchorId}">${d.failureTypeName}</a></td>
-                                <td>${d.triggerKind}</td>
-                                <td><code>${d.triggerHint}</code></td>
-                                <td>${d.defaultBehavior}</td>
-                                <td>${d.disableable}</td>
-                                <td>${d.rationale}</td>
-                            </tr>
-                        </j:forEach>
-                    </tbody>
-                </table>
+                <p>Most users only need Failure Types. Use Matched Rules when you need the exact classifier rule wording or want to understand why a specific log pattern maps to a specific failure type.</p>
+                <p>Start with one of these grouped entry points:</p>
+                <ul>
+                    <j:forEach var="group" items="${it.matchedRuleGroups}">
+                        <li>
+                            <a href="#${group.anchorId}">${group.failureTypeName}</a>
+                            (${group.ruleCount} rules): ${group.summary}
+                        </li>
+                    </j:forEach>
+                </ul>
+                <div id="matched-rule-groups">
+                    <j:forEach var="group" items="${it.matchedRuleGroups}">
+                        <j:choose>
+                            <j:when test="${group.defaultExpanded}">
+                                <details id="${group.anchorId}" open="open">
+                                    <summary>
+                                        <strong>${group.failureTypeName}</strong>
+                                        (${group.ruleCount} rules)
+                                    </summary>
+                                    <p>
+                                        Rules in this group emit
+                                        <a href="#${group.failureTypeAnchorId}">${group.failureTypeName}</a>.
+                                    </p>
+                                    <p>${group.summary}</p>
+                                    <table class="pane sortable">
+                                        <thead>
+                                            <tr>
+                                                <th align="left">Matched rule</th>
+                                                <th align="left">Classifier result</th>
+                                                <th align="left">Disableable</th>
+                                                <th align="left">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <j:forEach var="d" items="${group.rules}">
+                                                <tr id="${d.anchorId}">
+                                                    <td><strong>${d.name}</strong></td>
+                                                    <td><l:badge badge="${d.defaultBehaviorBadge}" /></td>
+                                                    <td><l:badge badge="${d.disableableBadge}" /></td>
+                                                    <td>
+                                                        <details>
+                                                            <summary>${d.triggerPreview}</summary>
+                                                            <p><strong>Trigger kind</strong></p>
+                                                            <p>${d.triggerKind}</p>
+                                                            <p><strong>Trigger</strong></p>
+                                                            <p><code>${d.triggerHint}</code></p>
+                                                            <p><strong>Why</strong></p>
+                                                            <p>${d.rationale}</p>
+                                                        </details>
+                                                    </td>
+                                                </tr>
+                                            </j:forEach>
+                                        </tbody>
+                                    </table>
+                                </details>
+                            </j:when>
+                            <j:otherwise>
+                                <details id="${group.anchorId}">
+                                    <summary>
+                                        <strong>${group.failureTypeName}</strong>
+                                        (${group.ruleCount} rules)
+                                    </summary>
+                                    <p>
+                                        Rules in this group emit
+                                        <a href="#${group.failureTypeAnchorId}">${group.failureTypeName}</a>.
+                                    </p>
+                                    <p>${group.summary}</p>
+                                    <table class="pane sortable">
+                                        <thead>
+                                            <tr>
+                                                <th align="left">Matched rule</th>
+                                                <th align="left">Classifier result</th>
+                                                <th align="left">Disableable</th>
+                                                <th align="left">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <j:forEach var="d" items="${group.rules}">
+                                                <tr id="${d.anchorId}">
+                                                    <td><strong>${d.name}</strong></td>
+                                                    <td><l:badge badge="${d.defaultBehaviorBadge}" /></td>
+                                                    <td><l:badge badge="${d.disableableBadge}" /></td>
+                                                    <td>
+                                                        <details>
+                                                            <summary>${d.triggerPreview}</summary>
+                                                            <p><strong>Trigger kind</strong></p>
+                                                            <p>${d.triggerKind}</p>
+                                                            <p><strong>Trigger</strong></p>
+                                                            <p><code>${d.triggerHint}</code></p>
+                                                            <p><strong>Why</strong></p>
+                                                            <p>${d.rationale}</p>
+                                                        </details>
+                                                    </td>
+                                                </tr>
+                                            </j:forEach>
+                                        </tbody>
+                                    </table>
+                                </details>
+                            </j:otherwise>
+                        </j:choose>
+                    </j:forEach>
+                </div>
             </l:card>
         </l:main-panel>
     </l:layout>

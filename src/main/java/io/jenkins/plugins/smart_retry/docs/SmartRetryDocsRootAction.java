@@ -30,4 +30,8 @@ public final class SmartRetryDocsRootAction implements RootAction {
     public List<SmartRetryReferenceCatalog.MatchedRuleDoc> getMatchedRules() {
         return SmartRetryReferenceCatalog.matchedRules();
     }
+
+    public List<SmartRetryReferenceCatalog.MatchedRuleGroup> getMatchedRuleGroups() {
+        return SmartRetryReferenceCatalog.matchedRuleGroups();
+    }
 }

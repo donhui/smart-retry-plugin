@@ -3,8 +3,13 @@ package io.jenkins.plugins.smart_retry.model;
 import io.jenkins.plugins.smart_retry.classify.DeterministicFailureClassifier;
 import io.jenkins.plugins.smart_retry.config.CustomProfileSettings;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import jenkins.management.Badge;
 
 public final class SmartRetryReferenceCatalog {
 
@@ -374,6 +379,41 @@ public final class SmartRetryReferenceCatalog {
         return MATCHED_RULES;
     }
 
+    public static List<MatchedRuleGroup> matchedRuleGroups() {
+        LinkedHashMap<String, FailureTypeDoc> failureTypesByName = new LinkedHashMap<>();
+        LinkedHashMap<String, GroupBuilder> grouped = new LinkedHashMap<>();
+        for (FailureTypeDoc type : FAILURE_TYPES) {
+            failureTypesByName.put(type.getName(), type);
+            grouped.put(type.getName(), new GroupBuilder(type.getName(), type.getAnchorId(), type.getMeaning()));
+        }
+        for (MatchedRuleDoc rule : MATCHED_RULES) {
+            GroupBuilder builder = grouped.get(rule.getFailureTypeName());
+            if (builder == null) {
+                FailureTypeDoc type = failureTypesByName.get(rule.getFailureTypeName());
+                builder = new GroupBuilder(
+                        rule.getFailureTypeName(),
+                        rule.getFailureTypeAnchorId(),
+                        type == null ? "" : type.getMeaning());
+                grouped.put(rule.getFailureTypeName(), builder);
+            }
+            builder.rules.add(rule);
+        }
+
+        List<MatchedRuleGroup> groups = new ArrayList<>();
+        for (Map.Entry<String, GroupBuilder> entry : grouped.entrySet()) {
+            GroupBuilder builder = entry.getValue();
+            if (!builder.rules.isEmpty()) {
+                groups.add(new MatchedRuleGroup(
+                        "group-" + slugify(builder.failureTypeName),
+                        builder.failureTypeName,
+                        builder.failureTypeAnchorId,
+                        builder.summary,
+                        Collections.unmodifiableList(new ArrayList<>(builder.rules))));
+            }
+        }
+        return Collections.unmodifiableList(groups);
+    }
+
     private static FailureTypeDoc failureType(
             FailureType type, String meaning, String currentImplementation, String rationale) {
         return new FailureTypeDoc(
@@ -414,12 +454,54 @@ public final class SmartRetryReferenceCatalog {
         return retryable ? "Retry allowed" : "No retry";
     }
 
+    private static Badge retryPolicyBadge(boolean retryable, String profileName) {
+        if (retryable) {
+            return new Badge(
+                    "Retry allowed",
+                    "The " + profileName + " profile may retry this failure type.",
+                    Badge.Severity.INFO);
+        }
+        return new Badge(
+                "No retry",
+                "The " + profileName + " profile does not retry this failure type.",
+                Badge.Severity.WARNING);
+    }
+
+    private static Badge configurableBadge(boolean configurable) {
+        if (configurable) {
+            return new Badge(
+                    "Configurable", "Custom profiles may choose to retry this failure type.", Badge.Severity.INFO);
+        }
+        return new Badge(
+                "No retry", "Custom profiles do not expose this failure type as retryable.", Badge.Severity.WARNING);
+    }
+
+    private static Badge yesNoBadge(boolean enabled, String enabledText, String disabledText) {
+        if (enabled) {
+            return new Badge(enabledText, enabledText, Badge.Severity.INFO);
+        }
+        return new Badge(disabledText, disabledText, Badge.Severity.WARNING);
+    }
+
     private static String customProfileLabel(FailureType type) {
         return CustomProfileSettings.supportedRetryableFailureTypes().contains(type) ? "Configurable" : "No retry";
     }
 
     private static String slugify(String value) {
         return value.toLowerCase().replace('_', '-');
+    }
+
+    private static final class GroupBuilder {
+        private final String failureTypeName;
+        private final String failureTypeAnchorId;
+        private final String summary;
+        private final List<MatchedRuleDoc> rules = new ArrayList<>();
+
+        private GroupBuilder(String failureTypeName, String failureTypeAnchorId, String summary) {
+            this.failureTypeName = failureTypeName;
+            this.failureTypeAnchorId = failureTypeAnchorId;
+            this.summary = summary;
+        }
     }
 
     public static final class FailureTypeDoc {
@@ -481,6 +563,22 @@ public final class SmartRetryReferenceCatalog {
 
         public String getRationale() {
             return rationale;
+        }
+
+        public Badge getConservativeBadge() {
+            return retryPolicyBadge("Retry allowed".equals(conservativeBehavior), "conservative");
+        }
+
+        public Badge getInfraBadge() {
+            return retryPolicyBadge("Retry allowed".equals(infraBehavior), "infra");
+        }
+
+        public Badge getCustomBadge() {
+            return configurableBadge("Configurable".equals(customBehavior));
+        }
+
+        public boolean isDefaultExpanded() {
+            return "AGENT_LOST".equals(name) || "SCM_TRANSIENT".equals(name) || "NETWORK_TRANSIENT".equals(name);
         }
     }
 
@@ -550,6 +648,70 @@ public final class SmartRetryReferenceCatalog {
 
         public String getRationale() {
             return rationale;
+        }
+
+        public Badge getDefaultBehaviorBadge() {
+            return retryPolicyBadge("Retry candidate".equals(defaultBehavior), "classifier");
+        }
+
+        public Badge getDisableableBadge() {
+            return yesNoBadge("Yes".equals(disableable), "Disableable", "Fixed");
+        }
+
+        public String getTriggerPreview() {
+            if (triggerHint.length() <= 88) {
+                return triggerHint;
+            }
+            return triggerHint.substring(0, 85) + "...";
+        }
+    }
+
+    public static final class MatchedRuleGroup {
+        private final String anchorId;
+        private final String failureTypeName;
+        private final String failureTypeAnchorId;
+        private final String summary;
+        private final List<MatchedRuleDoc> rules;
+
+        public MatchedRuleGroup(
+                String anchorId,
+                String failureTypeName,
+                String failureTypeAnchorId,
+                String summary,
+                List<MatchedRuleDoc> rules) {
+            this.anchorId = anchorId;
+            this.failureTypeName = failureTypeName;
+            this.failureTypeAnchorId = failureTypeAnchorId;
+            this.summary = summary;
+            this.rules = rules;
+        }
+
+        public String getAnchorId() {
+            return anchorId;
+        }
+
+        public String getFailureTypeName() {
+            return failureTypeName;
+        }
+
+        public String getFailureTypeAnchorId() {
+            return failureTypeAnchorId;
+        }
+
+        public List<MatchedRuleDoc> getRules() {
+            return rules;
+        }
+
+        public String getSummary() {
+            return summary;
+        }
+
+        public int getRuleCount() {
+            return rules.size();
+        }
+
+        public boolean isDefaultExpanded() {
+            return "AGENT_LOST".equals(failureTypeName) || "SCM_TRANSIENT".equals(failureTypeName);
         }
     }
 }
