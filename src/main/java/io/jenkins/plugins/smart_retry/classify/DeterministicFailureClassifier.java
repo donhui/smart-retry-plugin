@@ -351,36 +351,44 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
     @CheckForNull
     private static FailureClassification classifyByException(Throwable error) {
         String throwableContext = collectThrowableContext(error);
+        if (matchesAgentInfrastructureSignal(throwableContext)) {
+            return FailureClassification.retryCandidate(
+                    FailureType.AGENT_LOST,
+                    "agent-remoting-channel-closed",
+                    "Agent remoting channel closed or agent initialization broke mid-run");
+        }
         for (Throwable t = error; t != null; t = t.getCause()) {
             if (t instanceof FlowInterruptedException) {
                 return FailureClassification.nonRetryable(
                         FailureType.USER_ABORT, "flow-interrupted", "Build was interrupted");
             }
-            if (matchesAgentInfrastructureSignal(throwableContext)) {
-                return FailureClassification.retryCandidate(
-                        FailureType.AGENT_LOST,
-                        "agent-remoting-channel-closed",
-                        "Agent remoting channel closed or agent initialization broke mid-run");
+            FailureClassification networkExceptionMatch = classifyTransientNetworkException(t);
+            if (networkExceptionMatch != null) {
+                return networkExceptionMatch;
             }
-            if (t instanceof SocketTimeoutException) {
+        }
+        return null;
+    }
+
+    @CheckForNull
+    private static FailureClassification classifyTransientNetworkException(Throwable throwable) {
+        if (throwable instanceof SocketTimeoutException) {
+            return FailureClassification.retryCandidate(
+                    FailureType.NETWORK_TRANSIENT, "socket-timeout", "Socket read/connect timed out");
+        }
+        if (throwable instanceof ConnectException) {
+            return FailureClassification.retryCandidate(
+                    FailureType.NETWORK_TRANSIENT, "connect-exception", "Failed to connect to remote service");
+        }
+        if (throwable instanceof EOFException) {
+            return FailureClassification.retryCandidate(
+                    FailureType.NETWORK_TRANSIENT, "eof", "Unexpected end of stream");
+        }
+        if (throwable instanceof SocketException) {
+            String message = safeLower(throwable.getMessage());
+            if (message != null && (message.contains("connection reset") || message.contains("broken pipe"))) {
                 return FailureClassification.retryCandidate(
-                        FailureType.NETWORK_TRANSIENT, "socket-timeout", "Socket read/connect timed out");
-            }
-            if (t instanceof ConnectException) {
-                return FailureClassification.retryCandidate(
-                        FailureType.NETWORK_TRANSIENT, "connect-exception", "Failed to connect to remote service");
-            }
-            if (t instanceof SocketException) {
-                // Conservative: only treat common transient socket breaks as retry candidates.
-                String msg = safeLower(t.getMessage());
-                if (msg != null && (msg.contains("connection reset") || msg.contains("broken pipe"))) {
-                    return FailureClassification.retryCandidate(
-                            FailureType.NETWORK_TRANSIENT, "socket-exception", "Socket connection was reset or broken");
-                }
-            }
-            if (t instanceof EOFException) {
-                return FailureClassification.retryCandidate(
-                        FailureType.NETWORK_TRANSIENT, "eof", "Unexpected end of stream");
+                        FailureType.NETWORK_TRANSIENT, "socket-exception", "Socket connection was reset or broken");
             }
         }
         return null;

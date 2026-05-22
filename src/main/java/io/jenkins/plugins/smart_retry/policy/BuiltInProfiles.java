@@ -9,7 +9,11 @@ public final class BuiltInProfiles {
 
     public static final int DEFAULT_MAX_RETRIES = 1;
     public static final BackoffStrategy DEFAULT_BACKOFF = BackoffStrategy.FIXED;
-    public static final int DEFAULT_INITIAL_DELAY_SECONDS = 15;
+    public static final int DEFAULT_INITIAL_DELAY_SECONDS = 10;
+    public static final String PROFILE_CONSERVATIVE = "conservative";
+    public static final String PROFILE_INFRA = "infra";
+    public static final String BACKOFF_FIXED = "fixed";
+    public static final String BACKOFF_EXPONENTIAL = "exponential";
 
     private BuiltInProfiles() {}
 
@@ -36,10 +40,10 @@ public final class BuiltInProfiles {
 
     public static RuntimeSettings defaultsFor(@CheckForNull String profile) {
         String normalized = normalize(profile);
-        if ("infra".equals(normalized)) {
+        if (PROFILE_INFRA.equals(normalized)) {
             return infra();
         }
-        if ("conservative".equals(normalized)) {
+        if (PROFILE_CONSERVATIVE.equals(normalized)) {
             return conservative();
         }
         throw new IllegalArgumentException("Unknown built-in smartRetry profile: " + profile);
@@ -47,12 +51,12 @@ public final class BuiltInProfiles {
 
     public static boolean isBuiltInProfile(@CheckForNull String profile) {
         String normalized = normalize(profile);
-        return "conservative".equals(normalized) || "infra".equals(normalized);
+        return PROFILE_CONSERVATIVE.equals(normalized) || PROFILE_INFRA.equals(normalized);
     }
 
     public static RuntimeSettings conservative() {
         return new RuntimeSettings(
-                "conservative",
+                PROFILE_CONSERVATIVE,
                 Set.of(FailureType.AGENT_LOST, FailureType.SCM_TRANSIENT),
                 DEFAULT_MAX_RETRIES,
                 DEFAULT_BACKOFF,
@@ -61,7 +65,7 @@ public final class BuiltInProfiles {
 
     public static RuntimeSettings infra() {
         return new RuntimeSettings(
-                "infra",
+                PROFILE_INFRA,
                 Set.of(
                         FailureType.AGENT_LOST,
                         FailureType.SCM_TRANSIENT,
@@ -75,10 +79,10 @@ public final class BuiltInProfiles {
 
     private static BackoffStrategy parseBackoff(String raw, BackoffStrategy fallback) {
         String normalized = normalize(raw);
-        if ("exponential".equals(normalized)) {
+        if (BACKOFF_EXPONENTIAL.equals(normalized)) {
             return BackoffStrategy.EXPONENTIAL;
         }
-        if ("fixed".equals(normalized)) {
+        if (BACKOFF_FIXED.equals(normalized)) {
             return BackoffStrategy.FIXED;
         }
         return fallback;

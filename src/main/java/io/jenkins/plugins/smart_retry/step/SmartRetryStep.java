@@ -8,6 +8,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.config.CustomProfileSettings;
 import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.Locale;
 import java.util.Set;
 import org.jenkinsci.Symbol;
@@ -27,7 +28,9 @@ public class SmartRetryStep extends Step {
     private Integer initialDelaySeconds;
 
     @DataBoundConstructor
-    public SmartRetryStep() {}
+    public SmartRetryStep() {
+        // Required for Jenkins Pipeline databinding.
+    }
 
     @Override
     public StepExecution start(StepContext context) {
@@ -98,12 +101,12 @@ public class SmartRetryStep extends Step {
 
         public ListBoxModel doFillProfileItems() {
             SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
-            String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : "conservative";
+            String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : BuiltInProfiles.PROFILE_CONSERVATIVE;
 
             ListBoxModel items = new ListBoxModel();
             items.add("Use Jenkins default (" + effectiveDefault + ")", "");
-            items.add("conservative", "conservative");
-            items.add("infra", "infra");
+            items.add(BuiltInProfiles.PROFILE_CONSERVATIVE, BuiltInProfiles.PROFILE_CONSERVATIVE);
+            items.add(BuiltInProfiles.PROFILE_INFRA, BuiltInProfiles.PROFILE_INFRA);
             if (cfg != null) {
                 for (CustomProfileSettings customProfile : cfg.getCustomProfiles()) {
                     String name = customProfile.getName();
@@ -118,20 +121,21 @@ public class SmartRetryStep extends Step {
         public ListBoxModel doFillBackoffItems() {
             ListBoxModel items = new ListBoxModel();
             items.add("Use Jenkins default", "");
-            items.add("fixed", "fixed");
-            items.add("exponential", "exponential");
+            items.add(BuiltInProfiles.BACKOFF_FIXED, BuiltInProfiles.BACKOFF_FIXED);
+            items.add(BuiltInProfiles.BACKOFF_EXPONENTIAL, BuiltInProfiles.BACKOFF_EXPONENTIAL);
             return items;
         }
 
         public FormValidation doCheckProfile(@QueryParameter String value) {
             if (value == null || value.isBlank()) {
                 SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
-                String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : "conservative";
+                String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : BuiltInProfiles.PROFILE_CONSERVATIVE;
                 return FormValidation.ok("Using Jenkins default profile '" + effectiveDefault + "'.");
             }
 
             String normalized = value.trim().toLowerCase(Locale.ROOT);
-            if ("conservative".equals(normalized) || "infra".equals(normalized)) {
+            if (BuiltInProfiles.PROFILE_CONSERVATIVE.equals(normalized)
+                    || BuiltInProfiles.PROFILE_INFRA.equals(normalized)) {
                 return FormValidation.ok("Using built-in profile '" + normalized + "'.");
             }
 

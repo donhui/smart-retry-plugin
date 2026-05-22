@@ -109,7 +109,7 @@ smartRetry {
 Retry a build step with broader infra coverage:
 
 ```groovy
-smartRetry(profile: 'infra', maxRetries: 2, backoff: 'fixed', initialDelaySeconds: 15) {
+smartRetry(profile: 'infra', maxRetries: 2, backoff: 'fixed', initialDelaySeconds: 10) {
   sh 'mvn -B verify'
 }
 ```
@@ -143,7 +143,7 @@ pipeline {
 
     stage('Build') {
       steps {
-        smartRetry(profile: 'infra', maxRetries: 2, backoff: 'fixed', initialDelaySeconds: 15) {
+        smartRetry(profile: 'infra', maxRetries: 2, backoff: 'fixed', initialDelaySeconds: 10) {
           sh 'mvn -B verify'
         }
       }
@@ -175,7 +175,7 @@ A short example looks like this:
 
 ```text
 [smartRetry] begin attempt=1
-[smartRetry] attempt=1 profile=infra classified=SCM_TRANSIENT decision=RETRY nextAttempt=2 delayMillis=15000
+[smartRetry] attempt=1 profile=infra classified=SCM_TRANSIENT decision=RETRY nextAttempt=2 delayMillis=10000
 [smartRetry] begin attempt=2
 [smartRetry] completed profile=infra result=SUCCESS attempts=2 retriesUsed=1 reason="Recovered after 1 scheduled retry"
 ```

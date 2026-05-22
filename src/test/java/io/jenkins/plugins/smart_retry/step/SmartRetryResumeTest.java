@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.jenkins.plugins.smart_retry.action.SmartRetryRunAction;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
 class SmartRetryResumeTest {
+
+    private static final String BACKOFF_FIXED = BuiltInProfiles.BACKOFF_FIXED;
 
     @RegisterExtension
     static JenkinsSessionExtension sessions = new JenkinsSessionExtension();
@@ -26,7 +29,9 @@ class SmartRetryResumeTest {
             WorkflowJob job = j.jenkins.createProject(WorkflowJob.class, jobName);
             job.setDefinition(new CpsFlowDefinition(
                     "node {\n"
-                            + "  smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 10) {\n"
+                            + "  smartRetry(maxRetries: 1, backoff: '"
+                            + BACKOFF_FIXED
+                            + "', initialDelaySeconds: 10) {\n"
                             + "    if (fileExists('sentinel')) {\n"
                             + "      echo 'second attempt after restart'\n"
                             + "    } else {\n"

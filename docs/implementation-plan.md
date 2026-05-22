@@ -298,6 +298,10 @@ Current V1 model:
 - `List<CustomProfileSettings> customProfiles`
 - `Set<String> disabledBuiltInRules`
 
+Current V1 shared default:
+
+- `initialDelaySeconds = 10`
+
 Follow-on configuration candidates:
 
 - profile defaults

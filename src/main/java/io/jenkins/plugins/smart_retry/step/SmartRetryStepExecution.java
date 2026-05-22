@@ -35,6 +35,8 @@ public class SmartRetryStepExecution extends StepExecution {
     private static final Logger LOGGER = Logger.getLogger(SmartRetryStepExecution.class.getName());
     private static final String ATTEMPT_MARKER_PREFIX = "[smartRetry] begin attempt=";
     private static final int DEFAULT_LOG_CONTEXT_MAX_LINES = 200;
+    private static final String LOG_CLASSIFIED = " classified=";
+    private static final String LOG_REASON = " reason=\"";
 
     private final String profile;
     private final Integer maxRetries;
@@ -46,7 +48,7 @@ public class SmartRetryStepExecution extends StepExecution {
     private Set<String> resolvedDisabledBuiltInRuleIds = Set.of();
     private int attemptNumber = 1;
     private long waitingUntilMillis;
-    private transient volatile ScheduledFuture<?> waitingTask;
+    private transient ScheduledFuture<?> waitingTask;
 
     SmartRetryStepExecution(SmartRetryStep step, StepContext context) {
         super(context);
@@ -66,18 +68,17 @@ public class SmartRetryStepExecution extends StepExecution {
 
     @Override
     public void onResume() {
-        if (waitingUntilMillis <= 0L) {
-            return;
+        synchronized (this) {
+            if (waitingUntilMillis <= 0L) {
+                return;
+            }
         }
         scheduleRetry(System.currentTimeMillis());
     }
 
     @Override
     public void stop(Throwable cause) throws Exception {
-        ScheduledFuture<?> task = waitingTask;
-        if (task != null) {
-            task.cancel(false);
-        }
+        cancelWaitingTask();
         super.stop(cause);
     }
 
@@ -88,6 +89,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 listener.getLogger().println(ATTEMPT_MARKER_PREFIX + attemptNumber);
             }
         } catch (Exception e) {
+            restoreInterruptIfNeeded(e);
             LOGGER.log(Level.FINE, "smartRetry attempt marker logging failed", e);
         }
         getContext()
@@ -134,12 +136,12 @@ public class SmartRetryStepExecution extends StepExecution {
                     listener.getLogger()
                             .println("[smartRetry] attempt=" + attemptNumber
                                     + " profile=" + settings.getProfile()
-                                    + " classified=" + classification.getType()
+                                    + LOG_CLASSIFIED + classification.getType()
                                     + " retryCandidate=" + classification.isRetryCandidate()
                                     + " decision=" + (decision.shouldRetry() ? "RETRY" : "FAIL")
                                     + " nextAttempt=" + decision.getNextAttemptNumber()
                                     + " delayMillis=" + decision.getDelayMillis()
-                                    + " reason=\"" + decision.getReason() + "\"");
+                                    + LOG_REASON + decision.getReason() + "\"");
                 }
 
                 recordAttempt(context, settings.getProfile(), classification, decision);
@@ -156,6 +158,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 logFinalFailure(context, settings.getProfile(), classification, decision);
                 setFinalOutcome(context, "FAILED");
             } catch (Exception e) {
+                restoreInterruptIfNeeded(e);
                 LOGGER.log(Level.FINE, "smartRetry decision logging failed", e);
             }
             context.onFailure(t);
@@ -204,7 +207,7 @@ public class SmartRetryStepExecution extends StepExecution {
         if (cfg == null) {
             String effectiveProfile = profile;
             if (effectiveProfile == null || effectiveProfile.isBlank()) {
-                effectiveProfile = "conservative";
+                effectiveProfile = BuiltInProfiles.PROFILE_CONSERVATIVE;
             }
             RuntimeSettings defaults = BuiltInProfiles.defaultsFor(effectiveProfile);
             resolvedSettings = BuiltInProfiles.resolve(defaults, maxRetries, backoff, initialDelaySeconds);
@@ -226,6 +229,7 @@ public class SmartRetryStepExecution extends StepExecution {
         try {
             run = context.get(Run.class);
         } catch (Exception e) {
+            restoreInterruptIfNeeded(e);
             return null;
         }
         if (run == null) {
@@ -268,24 +272,23 @@ public class SmartRetryStepExecution extends StepExecution {
     }
 
     private void scheduleRetry(long nowMillis) {
-        long remainingMillis = Math.max(0L, waitingUntilMillis - nowMillis);
-        if (remainingMillis == 0L) {
-            waitingUntilMillis = 0L;
-            startAttempt();
-            return;
+        long remainingMillis;
+        synchronized (this) {
+            remainingMillis = Math.max(0L, waitingUntilMillis - nowMillis);
+            if (remainingMillis == 0L) {
+                waitingUntilMillis = 0L;
+                waitingTask = null;
+            } else {
+                ScheduledFuture<?> existing = waitingTask;
+                if (existing != null) {
+                    existing.cancel(false);
+                }
+                waitingTask =
+                        Timer.get().schedule(this::resumeScheduledAttempt, remainingMillis, TimeUnit.MILLISECONDS);
+                return;
+            }
         }
-        ScheduledFuture<?> existing = waitingTask;
-        if (existing != null) {
-            existing.cancel(false);
-        }
-        waitingTask = Timer.get()
-                .schedule(
-                        () -> {
-                            waitingUntilMillis = 0L;
-                            startAttempt();
-                        },
-                        remainingMillis,
-                        TimeUnit.MILLISECONDS);
+        startAttempt();
     }
 
     private void initializeRunAction() {
@@ -302,6 +305,7 @@ public class SmartRetryStepExecution extends StepExecution {
         try {
             run = context.get(Run.class);
         } catch (Exception e) {
+            restoreInterruptIfNeeded(e);
             return null;
         }
         if (run == null) {
@@ -316,7 +320,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 context,
                 "[smartRetry] scheduling profile="
                         + profile
-                        + " classified="
+                        + LOG_CLASSIFIED
                         + classification.getType()
                         + " nextAttempt="
                         + decision.getNextAttemptNumber()
@@ -337,7 +341,7 @@ public class SmartRetryStepExecution extends StepExecution {
                         + attemptNumber
                         + " retriesUsed="
                         + retriesUsed
-                        + " reason=\""
+                        + LOG_REASON
                         + reason
                         + "\"");
     }
@@ -350,9 +354,9 @@ public class SmartRetryStepExecution extends StepExecution {
                         + profile
                         + " result=FAILED attempts="
                         + attemptNumber
-                        + " classified="
+                        + LOG_CLASSIFIED
                         + classification.getType()
-                        + " reason=\""
+                        + LOG_REASON
                         + decision.getReason()
                         + "\"");
     }
@@ -364,6 +368,7 @@ public class SmartRetryStepExecution extends StepExecution {
                 listener.getLogger().println(line);
             }
         } catch (Exception e) {
+            restoreInterruptIfNeeded(e);
             LOGGER.log(Level.FINE, "smartRetry summary logging failed", e);
         }
     }
@@ -372,8 +377,30 @@ public class SmartRetryStepExecution extends StepExecution {
         if (resolvedSettings == null
                 || resolvedSettings.getProfile() == null
                 || resolvedSettings.getProfile().isBlank()) {
-            return "conservative";
+            return BuiltInProfiles.PROFILE_CONSERVATIVE;
         }
         return resolvedSettings.getProfile();
+    }
+
+    private synchronized void cancelWaitingTask() {
+        ScheduledFuture<?> task = waitingTask;
+        waitingTask = null;
+        if (task != null) {
+            task.cancel(false);
+        }
+    }
+
+    private void resumeScheduledAttempt() {
+        synchronized (this) {
+            waitingUntilMillis = 0L;
+            waitingTask = null;
+        }
+        startAttempt();
+    }
+
+    static void restoreInterruptIfNeeded(Exception exception) {
+        if (exception instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

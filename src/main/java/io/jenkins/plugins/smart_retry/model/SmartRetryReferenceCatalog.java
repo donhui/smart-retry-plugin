@@ -13,6 +13,15 @@ import jenkins.management.Badge;
 
 public final class SmartRetryReferenceCatalog {
 
+    private static final String TRIGGER_KIND_MESSAGE_PATTERN = "Message pattern";
+    private static final String TRIGGER_KIND_EXCEPTION_TYPE = "Exception type";
+    private static final String DEFAULT_BEHAVIOR_RETRY_CANDIDATE = "Retry candidate";
+    private static final String DEFAULT_BEHAVIOR_NEVER_RETRY = "Never retry";
+    private static final String PROFILE_BEHAVIOR_RETRY_ALLOWED = "Retry allowed";
+    private static final String PROFILE_BEHAVIOR_NO_RETRY = "No retry";
+    private static final String CUSTOM_BEHAVIOR_CONFIGURABLE = "Configurable";
+    private static final String DISABLEABLE_YES = "Yes";
+
     private static final Set<String> SUPPORTED_DISABLED_BUILT_IN_RULE_IDS =
             DeterministicFailureClassifier.supportedDisabledBuiltInRuleIds();
 
@@ -77,296 +86,296 @@ public final class SmartRetryReferenceCatalog {
             matchedRule(
                     "pipeline-no-such-dsl-method",
                     FailureType.PIPELINE_LOGIC_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "No such DSL method",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "This indicates the Jenkinsfile referenced a step or DSL method that Jenkins does not know how to run."),
             matchedRule(
                     "pipeline-no-such-property",
                     FailureType.PIPELINE_LOGIC_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "No such property",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "This indicates the Pipeline script referenced a missing variable or property rather than hitting a transient infrastructure issue."),
             matchedRule(
                     "pipeline-script-security-rejected",
                     FailureType.PIPELINE_LOGIC_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "RejectedAccessException | Scripts not permitted to use | script approval",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Script-security rejections are deterministic Jenkins policy failures and should fail fast."),
             matchedRule(
                     "pipeline-groovy-startup-failed",
                     FailureType.PIPELINE_LOGIC_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "WorkflowScript/Jenkinsfile plus startup failed | MissingPropertyException | MissingMethodException | MultipleCompilationErrorsException",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "This indicates the Pipeline Groovy script failed during parsing or evaluation rather than during an external transient operation."),
             matchedRule(
                     "compilation-failure",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Compilation failure | Compilation error",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Explicit compiler failure wording is treated as a deterministic code problem."),
             matchedRule(
                     "cannot-find-symbol",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "cannot find symbol",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Missing symbols in compiler output indicate source or build-definition defects, not transient infrastructure."),
             matchedRule(
                     "typescript-compiler-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "error TS<code>:",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "TypeScript compiler diagnostic codes are treated as deterministic source or type-check failures rather than transient infrastructure issues."),
             matchedRule(
                     "go-compiler-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "<file>.go:<line>:<column>: undefined: | cannot use | no required module provides package | imported and not used | syntax error:",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "These are high-confidence Go compiler diagnostics that point to source, import, or module-definition defects."),
             matchedRule(
                     "c-family-compiler-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "<file>.c/.cc/.cpp/.cxx/.h/.hpp:<line>[:<column>]: fatal error: | error:",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "File-scoped C/C++ compiler diagnostics are treated as deterministic build failures rather than transient infrastructure conditions."),
             matchedRule(
                     "c-family-linker-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "undefined reference to | collect2: error: ld returned N exit status | ld returned N exit status | clang: error: linker command failed",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Classic C/C++ linker failures indicate missing symbols or build-definition issues and should fail fast."),
             matchedRule(
                     "gradle-compile-task-failed",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Execution failed for task ':compileJava/:compileKotlin/...' with Compilation failed/error",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Gradle compile-task failures are only classified here when the log also contains an explicit compilation-failed signal, keeping generic task failures out of this rule."),
             matchedRule(
                     "java-compiler-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "<file>.java:<line>[:<column>]: error:",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "High-confidence javac diagnostics indicate deterministic source or dependency-definition defects rather than transient infrastructure issues."),
             matchedRule(
                     "kotlin-compiler-error",
                     FailureType.COMPILATION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "e: <file>.kt: (line, column):",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "High-confidence Kotlin compiler diagnostics indicate deterministic source or type-checking failures rather than transient infrastructure conditions."),
             matchedRule(
                     "test-opentest4j-assertion-failed",
                     FailureType.TEST_ASSERTION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "org.opentest4j.AssertionFailedError",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "This is the standard JUnit 5 assertion-failure signal and is treated as a deterministic test result."),
             matchedRule(
                     "test-junit-assertion-failed",
                     FailureType.TEST_ASSERTION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "AssertionFailedError | ComparisonFailure",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Classic JUnit assertion mismatch types indicate product or test expectation problems rather than transient infrastructure."),
             matchedRule(
                     "test-runner-failures-summary",
                     FailureType.TEST_ASSERTION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "There are/were test failures | FAILURES!!! | Tests run: N, Failures: M | Tests run: N, Errors: E",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "High-confidence test runner summaries should fail fast instead of being hidden behind automatic retries."),
             matchedRule(
                     "test-pytest-failures-summary",
                     FailureType.TEST_ASSERTION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "short test summary info with FAILED/ERROR | === N failed/error in Xs ===",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Pytest failure summaries are deterministic test-result signals and should fail fast instead of being retried."),
             matchedRule(
                     "test-gradle-failures-summary",
                     FailureType.TEST_ASSERTION_FAILURE,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "There were failing tests. See the report at: | N tests completed, M failed",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "Gradle test-task summaries are deterministic test-result signals and should fail fast instead of being retried."),
             matchedRule(
                     "agent-kubernetes-pod-not-found",
                     FailureType.AGENT_LOST,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Pod/pods <name> was deleted | not found | KubernetesClientException with pod not found",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This captures high-confidence Kubernetes agent disappearance signals where the backing pod is gone before the build step can finish."),
             matchedRule(
                     "agent-kubernetes-evicted",
                     FailureType.AGENT_LOST,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Evicted | node was low on resource | ephemeral-storage | MemoryPressure | DiskPressure",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This captures Kubernetes eviction and resource-pressure failures where the agent was removed by the cluster rather than failing because of user code."),
             matchedRule(
                     "agent-remoting-channel-closed",
                     FailureType.AGENT_LOST,
                     "Exception/message context",
                     "ChannelClosedException | Cannot contact agent | was marked offline | connection was broken | agent not fully initialized",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This captures Jenkins remoting and launcher failures where the agent channel closes or never finishes coming online, which is usually an infrastructure loss rather than a user-code defect."),
             matchedRule(
                     "agent-removed",
                     FailureType.AGENT_LOST,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "agent was removed | node was offline | channel closed | channel is closing | pod was deleted | evicted",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "The agent disappeared mid-run, which is a classic infrastructure-loss signal."),
             matchedRule(
                     "scm-remote-end-hung-up",
                     FailureType.SCM_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "remote end hung up unexpectedly",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "The remote SCM side dropped the connection unexpectedly, so a rerun may succeed."),
             matchedRule(
                     "scm-could-not-resolve-host",
                     FailureType.SCM_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "SCM context such as git checkout/fetch/clone/ls-remote plus could not resolve host",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees clear SCM context around the host-resolution failure."),
             matchedRule(
                     "scm-transport-interrupted",
                     FailureType.SCM_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "SCM context such as git clone/fetch/checkout plus curl 56 | RPC failed | unexpected disconnect while reading sideband packet | early EOF | index-pack failed",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees clear Git transport context around clone or fetch interruption signals."),
             matchedRule(
                     "network-could-not-resolve-host",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "could not resolve host",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Generic host-resolution failures are treated as network problems unless SCM context is explicit."),
             matchedRule(
                     "network-timeout",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "read timed out | connect timed out | connection timed out",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Timeouts often indicate a temporary service or network stall rather than a code problem."),
             matchedRule(
                     "network-http-5xx",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "502 Bad Gateway | 503 Service Unavailable | 504 Gateway Timeout | received/status code 502/503/504 | HTTP 502/503/504",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Only explicit HTTP-style 5xx signals are treated as external service instability unless repository context is explicit."),
             matchedRule(
                     "network-tls-handshake-timeout",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "tls handshake timeout",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "TLS handshake timeouts are treated as generic network instability unless repository context is explicit."),
             matchedRule(
                     "network-connection-refused",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "External-service context such as http/https URL, request url, dial tcp, docker pull, /v2/, or registry plus connection refused",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees clear external-service context around a refused connection rather than generic refused wording."),
             matchedRule(
                     "network-connection-reset",
                     FailureType.NETWORK_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "External-service context such as http/https URL, request url, dial tcp, docker pull, /v2/, or registry plus connection reset",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "The connection dropped unexpectedly after work had already started, but generic reset wording alone is not enough without clear external-service context."),
             matchedRule(
                     "artifact-partial-download",
                     FailureType.ARTIFACT_REPO_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Could not transfer artifact plus .jar.part plus No such file or directory",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This usually means Maven was in the middle of downloading from the artifact repository when the transfer broke."),
             matchedRule(
                     "artifact-http-5xx",
                     FailureType.ARTIFACT_REPO_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Artifact repository context plus explicit HTTP-style 502/503/504 signal",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees repository-specific context around the transient 5xx response."),
             matchedRule(
                     "artifact-tls-handshake-timeout",
                     FailureType.ARTIFACT_REPO_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Artifact repository context plus tls handshake timeout",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees repository-specific context around the TLS failure."),
             matchedRule(
                     "artifact-connection-refused",
                     FailureType.ARTIFACT_REPO_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Artifact repository context plus connection refused",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees repository-specific context around the refused connection, so generic service failures do not get misclassified as repository outages."),
             matchedRule(
                     "artifact-connection-reset",
                     FailureType.ARTIFACT_REPO_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "Artifact repository context plus connection reset",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees repository-specific context around the dropped connection, which makes it a better artifact-repository match than the generic network bucket."),
             matchedRule(
                     "identity-provider-ldap-reauthentication-failed",
                     FailureType.IDENTITY_PROVIDER_TRANSIENT,
-                    "Message pattern",
+                    TRIGGER_KIND_MESSAGE_PATTERN,
                     "LDAP reauthentication wording plus HTTP-style 401 signal",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies to narrow LDAP identity-provider reauthentication failures and does not treat generic 401 responses as transient."),
             matchedRule(
                     "flow-interrupted",
                     FailureType.USER_ABORT,
-                    "Exception type",
+                    TRIGGER_KIND_EXCEPTION_TYPE,
                     "FlowInterruptedException",
-                    "Never retry",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
                     "This is treated as an intentional stop signal, not a flaky infrastructure event."),
             matchedRule(
                     "socket-timeout",
                     FailureType.NETWORK_TRANSIENT,
-                    "Exception type",
+                    TRIGGER_KIND_EXCEPTION_TYPE,
                     "SocketTimeoutException",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Socket timeouts are mapped directly to transient network instability."),
             matchedRule(
                     "connect-exception",
                     FailureType.NETWORK_TRANSIENT,
-                    "Exception type",
+                    TRIGGER_KIND_EXCEPTION_TYPE,
                     "ConnectException",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "The target service could not be reached at connect time and may recover on a later attempt."),
             matchedRule(
                     "socket-exception",
                     FailureType.NETWORK_TRANSIENT,
-                    "Exception type",
+                    TRIGGER_KIND_EXCEPTION_TYPE,
                     "SocketException with connection reset or broken pipe",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Only the clearly transient socket break variants are accepted here."),
             matchedRule(
                     "eof",
                     FailureType.NETWORK_TRANSIENT,
-                    "Exception type",
+                    TRIGGER_KIND_EXCEPTION_TYPE,
                     "EOFException",
-                    "Retry candidate",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Unexpected end-of-stream often means the remote side dropped the connection mid-flight."));
 
     private SmartRetryReferenceCatalog() {}
@@ -446,23 +455,23 @@ public final class SmartRetryReferenceCatalog {
                 triggerKind,
                 triggerHint,
                 defaultBehavior,
-                disableable ? "Yes" : "No",
+                disableable ? DISABLEABLE_YES : "No",
                 rationale);
     }
 
     private static String retryPolicyLabel(boolean retryable) {
-        return retryable ? "Retry allowed" : "No retry";
+        return retryable ? PROFILE_BEHAVIOR_RETRY_ALLOWED : PROFILE_BEHAVIOR_NO_RETRY;
     }
 
     private static Badge retryPolicyBadge(boolean retryable, String profileName) {
         if (retryable) {
             return new Badge(
-                    "Retry allowed",
+                    PROFILE_BEHAVIOR_RETRY_ALLOWED,
                     "The " + profileName + " profile may retry this failure type.",
                     Badge.Severity.INFO);
         }
         return new Badge(
-                "No retry",
+                PROFILE_BEHAVIOR_NO_RETRY,
                 "The " + profileName + " profile does not retry this failure type.",
                 Badge.Severity.WARNING);
     }
@@ -470,10 +479,14 @@ public final class SmartRetryReferenceCatalog {
     private static Badge configurableBadge(boolean configurable) {
         if (configurable) {
             return new Badge(
-                    "Configurable", "Custom profiles may choose to retry this failure type.", Badge.Severity.INFO);
+                    CUSTOM_BEHAVIOR_CONFIGURABLE,
+                    "Custom profiles may choose to retry this failure type.",
+                    Badge.Severity.INFO);
         }
         return new Badge(
-                "No retry", "Custom profiles do not expose this failure type as retryable.", Badge.Severity.WARNING);
+                PROFILE_BEHAVIOR_NO_RETRY,
+                "Custom profiles do not expose this failure type as retryable.",
+                Badge.Severity.WARNING);
     }
 
     private static Badge yesNoBadge(boolean enabled, String enabledText, String disabledText) {
@@ -484,7 +497,9 @@ public final class SmartRetryReferenceCatalog {
     }
 
     private static String customProfileLabel(FailureType type) {
-        return CustomProfileSettings.supportedRetryableFailureTypes().contains(type) ? "Configurable" : "No retry";
+        return CustomProfileSettings.supportedRetryableFailureTypes().contains(type)
+                ? CUSTOM_BEHAVIOR_CONFIGURABLE
+                : PROFILE_BEHAVIOR_NO_RETRY;
     }
 
     private static String slugify(String value) {
@@ -566,15 +581,17 @@ public final class SmartRetryReferenceCatalog {
         }
 
         public Badge getConservativeBadge() {
-            return retryPolicyBadge("Retry allowed".equals(conservativeBehavior), "conservative");
+            return retryPolicyBadge(
+                    PROFILE_BEHAVIOR_RETRY_ALLOWED.equals(conservativeBehavior), BuiltInProfiles.PROFILE_CONSERVATIVE);
         }
 
         public Badge getInfraBadge() {
-            return retryPolicyBadge("Retry allowed".equals(infraBehavior), "infra");
+            return retryPolicyBadge(
+                    PROFILE_BEHAVIOR_RETRY_ALLOWED.equals(infraBehavior), BuiltInProfiles.PROFILE_INFRA);
         }
 
         public Badge getCustomBadge() {
-            return configurableBadge("Configurable".equals(customBehavior));
+            return configurableBadge(CUSTOM_BEHAVIOR_CONFIGURABLE.equals(customBehavior));
         }
 
         public boolean isDefaultExpanded() {
@@ -655,7 +672,7 @@ public final class SmartRetryReferenceCatalog {
         }
 
         public Badge getDefaultBehaviorBadge() {
-            return retryPolicyBadge("Retry candidate".equals(defaultBehavior), "classifier");
+            return retryPolicyBadge(DEFAULT_BEHAVIOR_RETRY_CANDIDATE.equals(defaultBehavior), "classifier");
         }
 
         public Badge getDisableableBadge() {
@@ -663,7 +680,7 @@ public final class SmartRetryReferenceCatalog {
         }
 
         public boolean isTriggerCode() {
-            return "Message pattern".equals(triggerKind) || "Exception type".equals(triggerKind);
+            return TRIGGER_KIND_MESSAGE_PATTERN.equals(triggerKind) || TRIGGER_KIND_EXCEPTION_TYPE.equals(triggerKind);
         }
 
         public String getTriggerPreview() {

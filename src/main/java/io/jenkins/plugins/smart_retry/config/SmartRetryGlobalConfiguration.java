@@ -28,10 +28,14 @@ import org.kohsuke.stapler.verb.POST;
 @Extension
 public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
-    private String defaultProfile = "conservative";
+    private static final String DEFAULT_PROFILE = BuiltInProfiles.PROFILE_CONSERVATIVE;
+    private static final String BACKOFF_FIXED = BuiltInProfiles.BACKOFF_FIXED;
+    private static final String BACKOFF_EXPONENTIAL = BuiltInProfiles.BACKOFF_EXPONENTIAL;
+
+    private String defaultProfile = DEFAULT_PROFILE;
     private int consoleContextLines = 200;
     private int maxRetries = BuiltInProfiles.DEFAULT_MAX_RETRIES;
-    private String backoff = BuiltInProfiles.DEFAULT_BACKOFF.name().toLowerCase(Locale.ROOT);
+    private String backoff = BACKOFF_FIXED;
     private int initialDelaySeconds = BuiltInProfiles.DEFAULT_INITIAL_DELAY_SECONDS;
     private List<CustomProfileSettings> customProfiles = new ArrayList<>();
     private String disabledBuiltInRules = "";
@@ -50,7 +54,7 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     @DataBoundSetter
     public void setDefaultProfile(@CheckForNull String defaultProfile) {
-        this.defaultProfile = normalize(defaultProfile, "conservative");
+        this.defaultProfile = normalize(defaultProfile, DEFAULT_PROFILE);
     }
 
     public int getConsoleContextLines() {
@@ -77,8 +81,7 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     @DataBoundSetter
     public void setBackoff(@CheckForNull String backoff) {
-        this.backoff =
-                normalizeBackoff(backoff, BuiltInProfiles.DEFAULT_BACKOFF.name().toLowerCase(Locale.ROOT));
+        this.backoff = normalizeBackoff(backoff, defaultBackoffName());
     }
 
     public int getInitialDelaySeconds() {
@@ -161,8 +164,8 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     public ListBoxModel doFillDefaultProfileItems() {
         ListBoxModel items = new ListBoxModel();
-        items.add("conservative", "conservative");
-        items.add("infra", "infra");
+        items.add(BuiltInProfiles.PROFILE_CONSERVATIVE, BuiltInProfiles.PROFILE_CONSERVATIVE);
+        items.add(BuiltInProfiles.PROFILE_INFRA, BuiltInProfiles.PROFILE_INFRA);
         for (CustomProfileSettings customProfile : customProfiles()) {
             String name = customProfile.getName();
             if (!name.isBlank()) {
@@ -174,13 +177,13 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     public ListBoxModel doFillBackoffItems() {
         ListBoxModel items = new ListBoxModel();
-        items.add("fixed", "fixed");
-        items.add("exponential", "exponential");
+        items.add(BACKOFF_FIXED, BACKOFF_FIXED);
+        items.add(BACKOFF_EXPONENTIAL, BACKOFF_EXPONENTIAL);
         return items;
     }
 
     public FormValidation doCheckDefaultProfile(@QueryParameter String value) {
-        String normalized = normalize(value, "conservative");
+        String normalized = normalize(value, DEFAULT_PROFILE);
         if (BuiltInProfiles.isBuiltInProfile(normalized)) {
             return FormValidation.ok("Using built-in profile '" + normalized + "'.");
         }
@@ -242,37 +245,10 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             return;
         }
 
-        List<JSONObject> customProfiles = new ArrayList<>();
-        if (rawProfiles instanceof JSONArray array) {
-            for (Object candidate : array) {
-                if (candidate instanceof JSONObject profileJson) {
-                    customProfiles.add(profileJson);
-                }
-            }
-        } else if (rawProfiles instanceof JSONObject profileJson) {
-            customProfiles.add(profileJson);
-        }
-
+        List<JSONObject> customProfiles = submittedCustomProfiles(rawProfiles);
         Set<String> seenNames = new LinkedHashSet<>();
         for (JSONObject customProfile : customProfiles) {
-            String normalizedName = CustomProfileSettings.normalizeName(customProfile.optString("name"));
-            if (normalizedName.isBlank()) {
-                throw new FormException("Custom profile name is required.", "customProfiles");
-            }
-            if (BuiltInProfiles.isBuiltInProfile(normalizedName)) {
-                throw new FormException(
-                        "Custom profile '" + normalizedName + "' uses a reserved built-in profile name.",
-                        "customProfiles");
-            }
-            if (!seenNames.add(normalizedName)) {
-                throw new FormException(
-                        "Custom profile '" + normalizedName + "' is defined more than once.", "customProfiles");
-            }
-            if (!hasConfiguredFailureTypes(customProfile.opt("retryableFailureTypeSelections"))) {
-                throw new FormException(
-                        "Custom profile '" + normalizedName + "' must select at least one retryable failure type.",
-                        "customProfiles");
-            }
+            validateSubmittedCustomProfile(customProfile, seenNames);
         }
     }
 
@@ -302,6 +278,41 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             return !value.isBlank();
         }
         return false;
+    }
+
+    private static List<JSONObject> submittedCustomProfiles(Object rawProfiles) {
+        List<JSONObject> customProfiles = new ArrayList<>();
+        if (rawProfiles instanceof JSONArray array) {
+            for (Object candidate : array) {
+                if (candidate instanceof JSONObject profileJson) {
+                    customProfiles.add(profileJson);
+                }
+            }
+        } else if (rawProfiles instanceof JSONObject profileJson) {
+            customProfiles.add(profileJson);
+        }
+        return customProfiles;
+    }
+
+    private static void validateSubmittedCustomProfile(JSONObject customProfile, Set<String> seenNames)
+            throws FormException {
+        String normalizedName = CustomProfileSettings.normalizeName(customProfile.optString("name"));
+        if (normalizedName.isBlank()) {
+            throw new FormException("Custom profile name is required.", "customProfiles");
+        }
+        if (BuiltInProfiles.isBuiltInProfile(normalizedName)) {
+            throw new FormException(
+                    "Custom profile '" + normalizedName + "' uses a reserved built-in profile name.", "customProfiles");
+        }
+        if (!seenNames.add(normalizedName)) {
+            throw new FormException(
+                    "Custom profile '" + normalizedName + "' is defined more than once.", "customProfiles");
+        }
+        if (!hasConfiguredFailureTypes(customProfile.opt("retryableFailureTypeSelections"))) {
+            throw new FormException(
+                    "Custom profile '" + normalizedName + "' must select at least one retryable failure type.",
+                    "customProfiles");
+        }
     }
 
     private static List<CustomProfileSettings> sanitizeCustomProfiles(
@@ -356,14 +367,14 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             return fallback;
         }
         String normalized = value.trim().toLowerCase(Locale.ROOT);
-        if (!Objects.equals(normalized, "fixed") && !Objects.equals(normalized, "exponential")) {
+        if (!Objects.equals(normalized, BACKOFF_FIXED) && !Objects.equals(normalized, BACKOFF_EXPONENTIAL)) {
             return fallback;
         }
         return normalized;
     }
 
     private static BackoffStrategy parseBackoff(String rawValue) {
-        return "exponential".equals(normalizeBackoff(rawValue, "fixed"))
+        return BACKOFF_EXPONENTIAL.equals(normalizeBackoff(rawValue, BACKOFF_FIXED))
                 ? BackoffStrategy.EXPONENTIAL
                 : BackoffStrategy.FIXED;
     }
@@ -395,5 +406,9 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             return "";
         }
         return String.join("\n", ids);
+    }
+
+    private static String defaultBackoffName() {
+        return BACKOFF_FIXED;
     }
 }

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.util.FormValidation;
 import io.jenkins.plugins.smart_retry.model.FailureType;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,7 @@ class CustomProfileSettingsTest {
         CustomProfileSettings.DescriptorImpl descriptor = new CustomProfileSettings.DescriptorImpl();
 
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("").kind);
-        assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("infra").kind);
+        assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName(BuiltInProfiles.PROFILE_INFRA).kind);
         assertEquals(FormValidation.Kind.OK, descriptor.doCheckName("Network_Only").kind);
     }
 

@@ -36,7 +36,9 @@ public final class CustomProfileSettings extends AbstractDescribableImpl<CustomP
     private String retryableFailureTypes = "";
 
     @DataBoundConstructor
-    public CustomProfileSettings() {}
+    public CustomProfileSettings() {
+        // Required for Jenkins form databinding.
+    }
 
     public String getName() {
         return name;

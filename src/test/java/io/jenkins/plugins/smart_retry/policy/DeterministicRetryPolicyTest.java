@@ -16,8 +16,8 @@ class DeterministicRetryPolicyTest {
 
     @Test
     void unknownNeverRetries() {
-        RuntimeSettings settings =
-                new RuntimeSettings("conservative", Set.of(FailureType.UNKNOWN), 5, BackoffStrategy.FIXED, 15);
+        RuntimeSettings settings = new RuntimeSettings(
+                BuiltInProfiles.PROFILE_CONSERVATIVE, Set.of(FailureType.UNKNOWN), 5, BackoffStrategy.FIXED, 15);
         FailureClassification classification =
                 FailureClassification.retryCandidate(FailureType.UNKNOWN, "unknown", "unknown");
 
@@ -30,7 +30,11 @@ class DeterministicRetryPolicyTest {
     @Test
     void respectsProfileRetryableTypes() {
         RuntimeSettings settings = new RuntimeSettings(
-                "conservative", Set.of(FailureType.NETWORK_TRANSIENT), 2, BackoffStrategy.FIXED, 15);
+                BuiltInProfiles.PROFILE_CONSERVATIVE,
+                Set.of(FailureType.NETWORK_TRANSIENT),
+                2,
+                BackoffStrategy.FIXED,
+                15);
         FailureClassification classification =
                 FailureClassification.retryCandidate(FailureType.SCM_TRANSIENT, "scm", "scm");
 
@@ -42,8 +46,8 @@ class DeterministicRetryPolicyTest {
 
     @Test
     void attemptExhaustionStopsRetrying() {
-        RuntimeSettings settings =
-                new RuntimeSettings("infra", Set.of(FailureType.NETWORK_TRANSIENT), 1, BackoffStrategy.FIXED, 15);
+        RuntimeSettings settings = new RuntimeSettings(
+                BuiltInProfiles.PROFILE_INFRA, Set.of(FailureType.NETWORK_TRANSIENT), 1, BackoffStrategy.FIXED, 15);
         FailureClassification classification =
                 FailureClassification.retryCandidate(FailureType.NETWORK_TRANSIENT, "net", "net");
 
@@ -93,16 +97,17 @@ class DeterministicRetryPolicyTest {
         assertEquals(
                 BuiltInProfiles.conservative().getInitialDelaySeconds(),
                 BuiltInProfiles.infra().getInitialDelaySeconds());
+        assertEquals(10, BuiltInProfiles.conservative().getInitialDelaySeconds());
     }
 
     @Test
     void resolveUsesProvidedProfileDefaults() {
-        RuntimeSettings defaults =
-                new RuntimeSettings("infra", Set.of(FailureType.NETWORK_TRANSIENT), 3, BackoffStrategy.FIXED, 9);
+        RuntimeSettings defaults = new RuntimeSettings(
+                BuiltInProfiles.PROFILE_INFRA, Set.of(FailureType.NETWORK_TRANSIENT), 3, BackoffStrategy.FIXED, 9);
 
         RuntimeSettings resolved = BuiltInProfiles.resolve(defaults, null, null, null);
 
-        assertEquals("infra", resolved.getProfile());
+        assertEquals(BuiltInProfiles.PROFILE_INFRA, resolved.getProfile());
         assertEquals(Set.of(FailureType.NETWORK_TRANSIENT), resolved.getRetryableFailureTypes());
         assertEquals(3, resolved.getMaxRetries());
         assertEquals(BackoffStrategy.FIXED, resolved.getBackoff());

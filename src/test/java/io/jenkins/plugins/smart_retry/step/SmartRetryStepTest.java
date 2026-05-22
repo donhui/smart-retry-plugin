@@ -5,6 +5,7 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.action.SmartRetryRunAction;
 import io.jenkins.plugins.smart_retry.config.CustomProfileSettings;
 import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.net.URL;
 import java.util.List;
 import org.htmlunit.HttpMethod;
@@ -24,6 +25,11 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 @WithJenkins
 class SmartRetryStepTest {
 
+    private static final String PROFILE_CONSERVATIVE = BuiltInProfiles.PROFILE_CONSERVATIVE;
+    private static final String PROFILE_INFRA = BuiltInProfiles.PROFILE_INFRA;
+    private static final String BACKOFF_FIXED = BuiltInProfiles.BACKOFF_FIXED;
+    private static final String BACKOFF_EXPONENTIAL = BuiltInProfiles.BACKOFF_EXPONENTIAL;
+
     @Test
     void executesBodyBlock(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-body");
@@ -33,7 +39,8 @@ class SmartRetryStepTest {
 
         jenkins.assertLogContains("inside smart retry", build);
         jenkins.assertLogContains(
-                "[smartRetry] completed profile=conservative result=SUCCESS attempts=1 retriesUsed=0 reason=\"Body succeeded on first attempt\"",
+                "[smartRetry] completed profile=" + PROFILE_CONSERVATIVE
+                        + " result=SUCCESS attempts=1 retriesUsed=0 reason=\"Body succeeded on first attempt\"",
                 build);
     }
 
@@ -47,7 +54,7 @@ class SmartRetryStepTest {
 
         Assertions.assertNotNull(action);
         Assertions.assertEquals("SUCCESS", action.getFinalOutcome());
-        Assertions.assertEquals("conservative", action.getProfile());
+        Assertions.assertEquals(PROFILE_CONSERVATIVE, action.getProfile());
         Assertions.assertEquals(0, action.getAttempts().size());
 
         HtmlPage page = jenkins.createWebClient().goTo(build.getUrl() + action.getUrlName());
@@ -64,7 +71,8 @@ class SmartRetryStepTest {
     void bindsInitialParameters(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-parameters");
         job.setDefinition(new CpsFlowDefinition(
-                "smartRetry(profile: 'infra', maxRetries: 2, backoff: 'exponential', initialDelaySeconds: 15) {\n"
+                "smartRetry(profile: '" + PROFILE_INFRA + "', maxRetries: 2, backoff: '" + BACKOFF_EXPONENTIAL
+                        + "', initialDelaySeconds: 10) {\n"
                         + "  echo 'configured smart retry'\n"
                         + "}",
                 true));
@@ -77,7 +85,7 @@ class SmartRetryStepTest {
     @Test
     void exposesSnippetGeneratorChoicesAndValidation(JenkinsRule jenkins) {
         SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
-        cfg.setDefaultProfile("infra");
+        cfg.setDefaultProfile(PROFILE_INFRA);
         CustomProfileSettings release = new CustomProfileSettings();
         release.setName("release");
         release.setRetryableFailureTypes("NETWORK_TRANSIENT");
@@ -89,18 +97,18 @@ class SmartRetryStepTest {
 
         ListBoxModel profileItems = descriptor.doFillProfileItems();
         Assertions.assertEquals("", profileItems.get(0).value);
-        Assertions.assertTrue(profileItems.get(0).name.contains("infra"));
-        Assertions.assertTrue(profileItems.stream().anyMatch(option -> "conservative".equals(option.value)));
-        Assertions.assertTrue(profileItems.stream().anyMatch(option -> "infra".equals(option.value)));
+        Assertions.assertTrue(profileItems.get(0).name.contains(PROFILE_INFRA));
+        Assertions.assertTrue(profileItems.stream().anyMatch(option -> PROFILE_CONSERVATIVE.equals(option.value)));
+        Assertions.assertTrue(profileItems.stream().anyMatch(option -> PROFILE_INFRA.equals(option.value)));
         Assertions.assertTrue(profileItems.stream().anyMatch(option -> "release".equals(option.value)));
 
         ListBoxModel backoffItems = descriptor.doFillBackoffItems();
         Assertions.assertEquals("", backoffItems.get(0).value);
-        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> "fixed".equals(option.value)));
-        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> "exponential".equals(option.value)));
+        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> BACKOFF_FIXED.equals(option.value)));
+        Assertions.assertTrue(backoffItems.stream().anyMatch(option -> BACKOFF_EXPONENTIAL.equals(option.value)));
 
         Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("").kind);
-        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("infra").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile(PROFILE_INFRA).kind);
         Assertions.assertEquals(FormValidation.Kind.OK, descriptor.doCheckProfile("release").kind);
         Assertions.assertEquals(FormValidation.Kind.WARNING, descriptor.doCheckProfile("missing-profile").kind);
 
@@ -148,7 +156,7 @@ class SmartRetryStepTest {
 
         WorkflowRun build = jenkins.assertBuildStatus(hudson.model.Result.FAILURE, job.scheduleBuild2(0));
 
-        jenkins.assertLogContains("[smartRetry] attempt=1 profile=conservative", build);
+        jenkins.assertLogContains("[smartRetry] attempt=1 profile=" + PROFILE_CONSERVATIVE, build);
         jenkins.assertLogContains("classified=SCM_TRANSIENT", build);
         jenkins.assertLogContains("decision=RETRY", build);
     }
@@ -158,7 +166,7 @@ class SmartRetryStepTest {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-retry-success");
         job.setDefinition(new CpsFlowDefinition(
                 "node {\n"
-                        + "  smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
                         + "    if (fileExists('sentinel')) {\n"
                         + "      echo 'second attempt'\n"
                         + "    } else {\n"
@@ -175,11 +183,13 @@ class SmartRetryStepTest {
         jenkins.assertLogContains("[smartRetry] attempt=1", build);
         jenkins.assertLogContains("decision=RETRY", build);
         jenkins.assertLogContains(
-                "[smartRetry] scheduling profile=conservative classified=SCM_TRANSIENT nextAttempt=2 delayMillis=0",
+                "[smartRetry] scheduling profile=" + PROFILE_CONSERVATIVE
+                        + " classified=SCM_TRANSIENT nextAttempt=2 delayMillis=0",
                 build);
         jenkins.assertLogContains("second attempt", build);
         jenkins.assertLogContains(
-                "[smartRetry] completed profile=conservative result=SUCCESS attempts=2 retriesUsed=1 reason=\"Recovered after 1 scheduled retry\"",
+                "[smartRetry] completed profile=" + PROFILE_CONSERVATIVE
+                        + " result=SUCCESS attempts=2 retriesUsed=1 reason=\"Recovered after 1 scheduled retry\"",
                 build);
         Assertions.assertNotNull(action);
         Assertions.assertEquals("SUCCESS", action.getFinalOutcome());
@@ -204,7 +214,7 @@ class SmartRetryStepTest {
     void retriesThenExhausts(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-retry-exhausts");
         job.setDefinition(new CpsFlowDefinition(
-                "smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                "smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
                         + "  error('remote end hung up unexpectedly')\n"
                         + "}",
                 true));
@@ -217,7 +227,8 @@ class SmartRetryStepTest {
         jenkins.assertLogContains("decision=FAIL", build);
         jenkins.assertLogContains("exhausted", build);
         jenkins.assertLogContains(
-                "[smartRetry] completed profile=conservative result=FAILED attempts=2 classified=SCM_TRANSIENT reason=\"Retry attempts exhausted (maxRetries=1)\"",
+                "[smartRetry] completed profile=" + PROFILE_CONSERVATIVE
+                        + " result=FAILED attempts=2 classified=SCM_TRANSIENT reason=\"Retry attempts exhausted (maxRetries=1)\"",
                 build);
 
         SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
@@ -230,7 +241,7 @@ class SmartRetryStepTest {
     void exposesDedicatedRunActionPage(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-action-page");
         job.setDefinition(new CpsFlowDefinition(
-                "smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                "smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
                         + "  error('remote end hung up unexpectedly')\n"
                         + "}",
                 true));
@@ -283,7 +294,7 @@ class SmartRetryStepTest {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-log-context");
         job.setDefinition(new CpsFlowDefinition(
                 "node {\n"
-                        + "  smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
                         + "    sh '>&2 echo \"Could not resolve host: example.invalid\"; exit 6'\n"
                         + "  }\n"
                         + "}",
@@ -295,7 +306,8 @@ class SmartRetryStepTest {
         jenkins.assertLogContains("classified=NETWORK_TRANSIENT", build);
         jenkins.assertLogContains("decision=FAIL", build);
         jenkins.assertLogContains(
-                "[smartRetry] completed profile=conservative result=FAILED attempts=1 classified=NETWORK_TRANSIENT reason=\"Active profile does not allow retrying: NETWORK_TRANSIENT\"",
+                "[smartRetry] completed profile=" + PROFILE_CONSERVATIVE
+                        + " result=FAILED attempts=1 classified=NETWORK_TRANSIENT reason=\"Active profile does not allow retrying: NETWORK_TRANSIENT\"",
                 build);
         jenkins.assertLogNotContains("[smartRetry] attempt=2", build);
     }
@@ -304,7 +316,8 @@ class SmartRetryStepTest {
     void classifiesLdapReauthenticationFailuresInInfraProfile(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-ldap-reauth");
         job.setDefinition(new CpsFlowDefinition(
-                "smartRetry(profile: 'infra', maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                "smartRetry(profile: '" + PROFILE_INFRA + "', maxRetries: 1, backoff: '" + BACKOFF_FIXED
+                        + "', initialDelaySeconds: 0) {\n"
                         + "  error(\"request url http://ldap.example/api, response code 401\\n"
                         + "Can't reauthenticate LDAP for user: 'xxx': user is locked, disabled or does not exist in LDAP\")\n"
                         + "}",
@@ -319,9 +332,9 @@ class SmartRetryStepTest {
     @Test
     void usesConfiguredSharedRetryDefaultsForInfraProfile(JenkinsRule jenkins) throws Exception {
         SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
-        cfg.setDefaultProfile("infra");
+        cfg.setDefaultProfile(PROFILE_INFRA);
         cfg.setMaxRetries(1);
-        cfg.setBackoff("fixed");
+        cfg.setBackoff(BACKOFF_FIXED);
         cfg.setInitialDelaySeconds(0);
         cfg.save();
 
@@ -334,7 +347,7 @@ class SmartRetryStepTest {
 
         WorkflowRun build = jenkins.assertBuildStatus(hudson.model.Result.FAILURE, job.scheduleBuild2(0));
 
-        jenkins.assertLogContains("[smartRetry] attempt=1 profile=infra", build);
+        jenkins.assertLogContains("[smartRetry] attempt=1 profile=" + PROFILE_INFRA, build);
         jenkins.assertLogContains("classified=NETWORK_TRANSIENT", build);
         jenkins.assertLogContains("decision=RETRY", build);
         jenkins.assertLogContains("[smartRetry] attempt=2", build);
@@ -348,7 +361,7 @@ class SmartRetryStepTest {
         release.setRetryableFailureTypes("NETWORK_TRANSIENT");
         cfg.setCustomProfiles(List.of(release));
         cfg.setMaxRetries(1);
-        cfg.setBackoff("fixed");
+        cfg.setBackoff(BACKOFF_FIXED);
         cfg.setInitialDelaySeconds(0);
         cfg.save();
 
@@ -385,7 +398,7 @@ class SmartRetryStepTest {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-git-transport");
         job.setDefinition(new CpsFlowDefinition(
                 "node {\n"
-                        + "  smartRetry(maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
                         + "    sh '''\n"
                         + "      >&2 echo \"git clone --depth 10 --recurse-submodules http://gitlab.example/repo.git -b dev\"\n"
                         + "      >&2 echo \"error: RPC failed; curl 56 Problem (3) in the Chunked-Encoded data\"\n"
@@ -410,7 +423,8 @@ class SmartRetryStepTest {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-connection-refused");
         job.setDefinition(new CpsFlowDefinition(
                 "node {\n"
-                        + "  smartRetry(profile: 'infra', maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                        + "  smartRetry(profile: '" + PROFILE_INFRA + "', maxRetries: 1, backoff: '" + BACKOFF_FIXED
+                        + "', initialDelaySeconds: 0) {\n"
                         + "    sh '''\n"
                         + "      >&2 echo \"docker pull jfrog.example/docker/ci_tool:latest\"\n"
                         + "      >&2 echo \"Error response from daemon: Get \\\"https://jfrog.example/v2/\\\": dial tcp 100.13.11.11:443: connect: connection refused\"\n"
@@ -436,7 +450,8 @@ class SmartRetryStepTest {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-connection-reset");
         job.setDefinition(new CpsFlowDefinition(
                 "node {\n"
-                        + "  smartRetry(profile: 'infra', maxRetries: 1, backoff: 'fixed', initialDelaySeconds: 0) {\n"
+                        + "  smartRetry(profile: '" + PROFILE_INFRA + "', maxRetries: 1, backoff: '" + BACKOFF_FIXED
+                        + "', initialDelaySeconds: 0) {\n"
                         + "    sh '''\n"
                         + "      >&2 echo \"docker pull jfrog.example/docker/ci_tool:latest\"\n"
                         + "      >&2 echo \"Error response from daemon: Get \\\"https://jfrog.example/v2/\\\": read tcp 10.0.0.1:41234->100.13.11.11:443: read: connection reset by peer\"\n"

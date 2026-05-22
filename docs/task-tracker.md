@@ -188,3 +188,8 @@ Recommended next coding slice:
 - [x] Fixed default-value handling for optional step arguments so blank `profile` and `backoff` selections no longer persist as empty-string overrides when Jenkins should use global defaults
 - [x] Added focused step-configuration coverage and verified the Snippet Generator-related behavior, including the real `pipeline-syntax/generateSnippet` endpoint, with `mvn spotless:apply` and `mvn -Dtest=SmartRetryStepTest test`
 - [x] Closed the remaining MVP documentation evaluation item by deciding that constrained custom classification-rule authoring is post-MVP V2 work rather than part of the pilot V1 line
+
+### 2026-05-22
+
+- [x] Reduced the shared default `initialDelaySeconds` from `15` to `10` so the first retry remains conservative without adding as much latency to common one-retry recovery paths
+- [x] Synced the PRD, development plan, implementation plan, README, and focused tests with the updated default retry delay

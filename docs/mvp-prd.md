@@ -106,7 +106,7 @@ smartRetry(
   profile: 'infra',
   maxRetries: 2,
   backoff: 'exponential',
-  initialDelaySeconds: 15
+  initialDelaySeconds: 10
 ) {
   sh 'mvn -B test'
 }
@@ -375,7 +375,7 @@ Suggested defaults:
 
 - `maxRetries = 1`
 - `backoff = fixed`
-- `initialDelaySeconds = 15`
+- `initialDelaySeconds = 10`
 
 Recommended use:
 
@@ -399,7 +399,7 @@ Suggested defaults:
 
 - `maxRetries = 1`
 - `backoff = fixed`
-- `initialDelaySeconds = 15`
+- `initialDelaySeconds = 10`
 
 Recommended use:
 
@@ -495,7 +495,7 @@ Example:
 
 ```text
 [smartRetry] begin attempt=1
-[smartRetry] attempt=1 profile=conservative classified=SCM_TRANSIENT retryCandidate=true decision=RETRY nextAttempt=2 delayMillis=15000 reason="Retryable transient failure: SCM_TRANSIENT"
+[smartRetry] attempt=1 profile=conservative classified=SCM_TRANSIENT retryCandidate=true decision=RETRY nextAttempt=2 delayMillis=10000 reason="Retryable transient failure: SCM_TRANSIENT"
 [smartRetry] begin attempt=2
 [smartRetry] attempt=2 profile=conservative classified=SCM_TRANSIENT retryCandidate=true decision=FAIL nextAttempt=0 delayMillis=0 reason="Retry attempts exhausted (maxRetries=1)"
 ```

@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.smart_retry.model.AttemptRecord;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
@@ -17,6 +18,12 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    private static final String NOT_APPLICABLE = "n/a";
+    private static final String OUTCOME_SUCCESS = "SUCCESS";
+    private static final String OUTCOME_FAILED = "FAILED";
+    private static final String RETRY_WORD = "retry";
+    private static final String DOCS_TAB_DETAILS = "smartRetryDocs#tab-details";
 
     private transient Run<?, ?> run;
 
@@ -60,7 +67,8 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     }
 
     @CheckForNull
-    public Run<?, ?> getRun() {
+    @SuppressWarnings("rawtypes")
+    public Run getRun() {
         return run;
     }
 
@@ -106,17 +114,17 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         if (!isHasFinalOutcome()) {
             return new Badge("In progress", "Smart Retry has not reached a terminal outcome yet.", Badge.Severity.INFO);
         }
-        if ("SUCCESS".equals(finalOutcome)) {
+        if (OUTCOME_SUCCESS.equals(finalOutcome)) {
             return new Badge("Success", "Smart Retry completed successfully.", Badge.Severity.INFO);
         }
-        if ("FAILED".equals(finalOutcome)) {
+        if (OUTCOME_FAILED.equals(finalOutcome)) {
             return new Badge("Failed", "Smart Retry exhausted or rejected further retries.", Badge.Severity.DANGER);
         }
         return new Badge(getFinalOutcomeDisplay(), "Smart Retry recorded this final outcome.", Badge.Severity.INFO);
     }
 
     public Badge getProfileBadge() {
-        String effectiveProfile = isHasProfile() ? profile : "conservative";
+        String effectiveProfile = isHasProfile() ? profile : BuiltInProfiles.PROFILE_CONSERVATIVE;
         return new Badge(
                 "Profile: " + effectiveProfile, "The active Smart Retry profile for this build.", Badge.Severity.INFO);
     }
@@ -125,29 +133,29 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         int retries = getRetryScheduledCount();
         Badge.Severity severity = retries > 0 ? Badge.Severity.INFO : Badge.Severity.WARNING;
         return new Badge(
-                retries + " " + pluralize("retry", retries) + " scheduled",
+                retries + " " + pluralize(RETRY_WORD, retries) + " scheduled",
                 "How many additional attempts Smart Retry scheduled for this build.",
                 severity);
     }
 
     public String getTerminalFailureTypeDisplay() {
-        if ("SUCCESS".equals(finalOutcome)) {
-            return "n/a";
+        if (OUTCOME_SUCCESS.equals(finalOutcome)) {
+            return NOT_APPLICABLE;
         }
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
-            return "n/a";
+            return NOT_APPLICABLE;
         }
         return attempt.getFailureType().name();
     }
 
     public String getTerminalMatchedRuleDisplay() {
-        if ("SUCCESS".equals(finalOutcome)) {
-            return "n/a";
+        if (OUTCOME_SUCCESS.equals(finalOutcome)) {
+            return NOT_APPLICABLE;
         }
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
-            return "n/a";
+            return NOT_APPLICABLE;
         }
         return attempt.getMatchedRuleDisplay();
     }
@@ -155,7 +163,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     public String getLastRetryTriggeringFailureTypeDisplay() {
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
-            return "n/a";
+            return NOT_APPLICABLE;
         }
         return attempt.getFailureType().name();
     }
@@ -163,17 +171,17 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     public String getLastRetryTriggeringMatchedRuleDisplay() {
         AttemptRecord attempt = getTerminalAttempt();
         if (attempt == null) {
-            return "n/a";
+            return NOT_APPLICABLE;
         }
         return attempt.getMatchedRuleDisplay();
     }
 
     public boolean isRecoveredBuild() {
-        return "SUCCESS".equals(finalOutcome) && !attempts.isEmpty();
+        return OUTCOME_SUCCESS.equals(finalOutcome) && !attempts.isEmpty();
     }
 
     public String getNarrativeSummary() {
-        if ("SUCCESS".equals(finalOutcome) && !isHasAttempts()) {
+        if (OUTCOME_SUCCESS.equals(finalOutcome) && !isHasAttempts()) {
             return "The build completed successfully without Smart Retry needing to reschedule the body.";
         }
 
@@ -185,18 +193,18 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         AttemptRecord terminalAttempt = getTerminalAttempt();
         int terminalAttemptNumber = terminalAttempt == null ? attempts.size() : terminalAttempt.getAttemptNumber();
 
-        if ("SUCCESS".equals(finalOutcome)) {
+        if (OUTCOME_SUCCESS.equals(finalOutcome)) {
             if (retries == 0) {
                 return "The build completed successfully without Smart Retry needing to reschedule the body.";
             }
             return "Smart Retry recovered this build after "
                     + retries
                     + " scheduled "
-                    + pluralize("retry", retries)
+                    + pluralize(RETRY_WORD, retries)
                     + ".";
         }
 
-        if ("FAILED".equals(finalOutcome)) {
+        if (OUTCOME_FAILED.equals(finalOutcome)) {
             if (retries == 0) {
                 return "Smart Retry stopped at attempt "
                         + terminalAttemptNumber
@@ -205,7 +213,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
             return "Smart Retry scheduled "
                     + retries
                     + " "
-                    + pluralize("retry", retries)
+                    + pluralize(RETRY_WORD, retries)
                     + " before stopping at attempt "
                     + terminalAttemptNumber
                     + ".";
@@ -215,7 +223,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     }
 
     public String getNarrativeReason() {
-        if ("SUCCESS".equals(finalOutcome)) {
+        if (OUTCOME_SUCCESS.equals(finalOutcome)) {
             AttemptRecord lastFailure = getTerminalAttempt();
             if (lastFailure == null) {
                 return "The body succeeded on its first attempt, so no failure classification was needed.";
@@ -245,8 +253,8 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         this.profile = profile;
     }
 
-    public void addAttempt(AttemptRecord record) {
-        attempts.add(record);
+    public void addAttempt(AttemptRecord attemptRecord) {
+        attempts.add(attemptRecord);
         saveRun();
     }
 
@@ -313,16 +321,16 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     @CheckForNull
     public String getTerminalFailureTypeDocsUrl() {
         AttemptRecord attempt = getTerminalAttempt();
-        if (attempt == null || "SUCCESS".equals(finalOutcome)) {
+        if (attempt == null || OUTCOME_SUCCESS.equals(finalOutcome)) {
             return null;
         }
-        return "smartRetryDocs#tab-details";
+        return DOCS_TAB_DETAILS;
     }
 
     @CheckForNull
     public String getTerminalMatchedRuleDocsUrl() {
         AttemptRecord attempt = getTerminalAttempt();
-        if (attempt == null || "SUCCESS".equals(finalOutcome)) {
+        if (attempt == null || OUTCOME_SUCCESS.equals(finalOutcome)) {
             return null;
         }
         String anchor = attempt.getMatchedRuleDocumentationAnchor();
@@ -335,7 +343,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         if (attempt == null) {
             return null;
         }
-        return "smartRetryDocs#tab-details";
+        return DOCS_TAB_DETAILS;
     }
 
     @CheckForNull

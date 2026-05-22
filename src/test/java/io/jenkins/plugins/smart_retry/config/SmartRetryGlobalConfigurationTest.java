@@ -9,6 +9,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import io.jenkins.plugins.smart_retry.policy.BackoffStrategy;
+import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.List;
 import java.util.Set;
 import net.sf.json.JSONArray;
@@ -34,13 +35,13 @@ class SmartRetryGlobalConfigurationTest {
         duplicate.setRetryableFailureTypes("agent_lost");
 
         CustomProfileSettings reserved = new CustomProfileSettings();
-        reserved.setName("infra");
+        reserved.setName(BuiltInProfiles.PROFILE_INFRA);
         reserved.setRetryableFailureTypes("agent_lost");
 
         cfg.setDefaultProfile("release");
         cfg.setConsoleContextLines(50);
         cfg.setMaxRetries(3);
-        cfg.setBackoff("exponential");
+        cfg.setBackoff(BuiltInProfiles.BACKOFF_EXPONENTIAL);
         cfg.setInitialDelaySeconds(7);
         cfg.setCustomProfiles(List.of(release, duplicate, reserved));
         cfg.setDisabledBuiltInRules("scm-remote-end-hung-up\nflow-interrupted\nartifact-connection-reset\nnot-a-rule");
@@ -51,7 +52,7 @@ class SmartRetryGlobalConfigurationTest {
         assertEquals("release", cfg.getDefaultProfile());
         assertEquals(50, cfg.getConsoleContextLines());
         assertEquals(3, cfg.getMaxRetries());
-        assertEquals("exponential", cfg.getBackoff());
+        assertEquals(BuiltInProfiles.BACKOFF_EXPONENTIAL, cfg.getBackoff());
         assertEquals(7, cfg.getInitialDelaySeconds());
         assertEquals(1, cfg.getCustomProfiles().size());
         assertEquals("release", cfg.getCustomProfiles().get(0).getName());
@@ -60,10 +61,10 @@ class SmartRetryGlobalConfigurationTest {
                 cfg.getCustomProfiles().get(0).getRetryableFailureTypes());
         assertEquals(
                 Set.of(FailureType.AGENT_LOST, FailureType.SCM_TRANSIENT),
-                cfg.getProfileSettings("conservative").getRetryableFailureTypes());
+                cfg.getProfileSettings(BuiltInProfiles.PROFILE_CONSERVATIVE).getRetryableFailureTypes());
         assertEquals(
                 BackoffStrategy.EXPONENTIAL,
-                cfg.getProfileSettings("conservative").getBackoff());
+                cfg.getProfileSettings(BuiltInProfiles.PROFILE_CONSERVATIVE).getBackoff());
         assertEquals(
                 Set.of(
                         FailureType.AGENT_LOST,
@@ -71,8 +72,8 @@ class SmartRetryGlobalConfigurationTest {
                         FailureType.NETWORK_TRANSIENT,
                         FailureType.ARTIFACT_REPO_TRANSIENT,
                         FailureType.IDENTITY_PROVIDER_TRANSIENT),
-                cfg.getProfileSettings("infra").getRetryableFailureTypes());
-        assertEquals(3, cfg.getProfileSettings("infra").getMaxRetries());
+                cfg.getProfileSettings(BuiltInProfiles.PROFILE_INFRA).getRetryableFailureTypes());
+        assertEquals(3, cfg.getProfileSettings(BuiltInProfiles.PROFILE_INFRA).getMaxRetries());
         assertEquals(
                 Set.of(FailureType.NETWORK_TRANSIENT, FailureType.ARTIFACT_REPO_TRANSIENT),
                 cfg.getProfileSettings("release").getRetryableFailureTypes());
@@ -105,12 +106,12 @@ class SmartRetryGlobalConfigurationTest {
         ListBoxModel backoffItems = cfg.doFillBackoffItems();
 
         assertEquals(3, profileItems.size());
-        assertEquals("conservative", profileItems.get(0).value);
-        assertEquals("infra", profileItems.get(1).value);
+        assertEquals(BuiltInProfiles.PROFILE_CONSERVATIVE, profileItems.get(0).value);
+        assertEquals(BuiltInProfiles.PROFILE_INFRA, profileItems.get(1).value);
         assertEquals("release", profileItems.get(2).value);
         assertEquals(2, backoffItems.size());
-        assertEquals("fixed", backoffItems.get(0).value);
-        assertEquals("exponential", backoffItems.get(1).value);
+        assertEquals(BuiltInProfiles.BACKOFF_FIXED, backoffItems.get(0).value);
+        assertEquals(BuiltInProfiles.BACKOFF_EXPONENTIAL, backoffItems.get(1).value);
     }
 
     @Test
@@ -122,7 +123,7 @@ class SmartRetryGlobalConfigurationTest {
         release.setRetryableFailureTypes("network_transient");
         cfg.setCustomProfiles(List.of(release));
 
-        assertEquals(FormValidation.Kind.OK, cfg.doCheckDefaultProfile("infra").kind);
+        assertEquals(FormValidation.Kind.OK, cfg.doCheckDefaultProfile(BuiltInProfiles.PROFILE_INFRA).kind);
         assertEquals(FormValidation.Kind.OK, cfg.doCheckDefaultProfile("release").kind);
         assertEquals(FormValidation.Kind.WARNING, cfg.doCheckDefaultProfile("missing").kind);
         assertEquals(FormValidation.Kind.OK, cfg.doCheckConsoleContextLines("200").kind);
@@ -170,7 +171,7 @@ class SmartRetryGlobalConfigurationTest {
         duplicateAgain.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("AGENT_LOST")));
 
         JSONObject reserved = new JSONObject();
-        reserved.put("name", "infra");
+        reserved.put("name", BuiltInProfiles.PROFILE_INFRA);
         reserved.put("retryableFailureTypeSelections", JSONArray.fromObject(List.of("AGENT_LOST")));
 
         JSONObject blank = new JSONObject();
@@ -191,7 +192,9 @@ class SmartRetryGlobalConfigurationTest {
         Descriptor.FormException reservedException = assertThrows(
                 Descriptor.FormException.class,
                 () -> SmartRetryGlobalConfiguration.validateCustomProfilesForm(reservedForm));
-        assertEquals("Custom profile 'infra' uses a reserved built-in profile name.", reservedException.getMessage());
+        assertEquals(
+                "Custom profile '" + BuiltInProfiles.PROFILE_INFRA + "' uses a reserved built-in profile name.",
+                reservedException.getMessage());
 
         JSONObject blankForm = new JSONObject();
         blankForm.put("customProfiles", blank);

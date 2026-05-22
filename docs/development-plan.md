@@ -92,6 +92,7 @@ Exit criteria:
 
 - classification and policy are separate
 - policy decisions are deterministic and easy to test
+- shared default retry timing stays conservative while keeping the first retry delay short enough for common transient recoveries
 
 ## Milestone 4: Step Execution Loop
 

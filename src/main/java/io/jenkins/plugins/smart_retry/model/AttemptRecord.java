@@ -12,6 +12,9 @@ public final class AttemptRecord implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private static final String RETRY_SCHEDULED = "Retry scheduled";
+    private static final String NO_RETRY = "No retry";
+
     private final int attemptNumber;
     private final FailureType failureType;
     private final String matchedRule;
@@ -94,14 +97,14 @@ public final class AttemptRecord implements Serializable {
     }
 
     public String getRetryDecisionDisplay() {
-        return retried ? "Retry scheduled" : "No retry";
+        return retried ? RETRY_SCHEDULED : NO_RETRY;
     }
 
     public Badge getRetryDecisionBadge() {
         if (retried) {
-            return new Badge("Retry scheduled", "Smart Retry scheduled another attempt.", Badge.Severity.INFO);
+            return new Badge(RETRY_SCHEDULED, "Smart Retry scheduled another attempt.", Badge.Severity.INFO);
         }
-        return new Badge("No retry", "Smart Retry stopped after this attempt.", Badge.Severity.WARNING);
+        return new Badge(NO_RETRY, "Smart Retry stopped after this attempt.", Badge.Severity.WARNING);
     }
 
     public String getOutcomeDisplay() {
@@ -113,7 +116,7 @@ public final class AttemptRecord implements Serializable {
             return new Badge("Failed", "This attempt ended the Smart Retry flow.", Badge.Severity.DANGER);
         }
         if ("RETRY_SCHEDULED".equals(outcome)) {
-            return new Badge("Retry scheduled", "This attempt triggered another retry.", Badge.Severity.INFO);
+            return new Badge(RETRY_SCHEDULED, "This attempt triggered another retry.", Badge.Severity.INFO);
         }
         return new Badge(getOutcomeDisplay(), "Smart Retry recorded this outcome.", Badge.Severity.INFO);
     }
