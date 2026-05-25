@@ -167,6 +167,8 @@ public final class CustomProfileSettings extends AbstractDescribableImpl<CustomP
                 case NETWORK_TRANSIENT -> "An external service was temporarily unreachable.";
                 case ARTIFACT_REPO_TRANSIENT -> "A dependency or artifact repository was temporarily unavailable.";
                 case IDENTITY_PROVIDER_TRANSIENT -> "LDAP or identity-provider reauthentication failed transiently.";
+                case SCM_CONFIGURATION_FAILURE ->
+                    "The requested SCM revision, branch, tag, commit, or checkout target does not exist.";
                 default -> "";
             };
         }

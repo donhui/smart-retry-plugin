@@ -35,4 +35,15 @@ class SmartRetryReferenceCatalogTest {
         assertEquals("Retry allowed", networkTransient.getInfraBehavior());
         assertEquals("Configurable", networkTransient.getCustomBehavior());
     }
+
+    @Test
+    void scmConfigurationFailureKeepsNeverRetryDocsText() {
+        SmartRetryReferenceCatalog.MatchedRuleDoc rule = SmartRetryReferenceCatalog.matchedRules().stream()
+                .filter(item -> "scm-remote-branch-not-found".equals(item.getName()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("Never retry", rule.getDefaultBehavior());
+        assertEquals("No", rule.getDisableable());
+    }
 }

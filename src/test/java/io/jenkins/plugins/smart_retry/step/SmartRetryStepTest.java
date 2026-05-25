@@ -419,6 +419,83 @@ class SmartRetryStepTest {
     }
 
     @Test
+    void classifiesGitHttp5xxFromConsoleContextAsScmTransient(JenkinsRule jenkins) throws Exception {
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-git-http-5xx");
+        job.setDefinition(new CpsFlowDefinition(
+                "node {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
+                        + "    sh '''\n"
+                        + "      >&2 echo \"using GIT_ASKPASS to set credentials\"\n"
+                        + "      >&2 echo \"/usr/bin/git fetch --tags --progress http://gitlab.example/repo.git +refs/heads/*:refs/remotes/origin/*\"\n"
+                        + "      >&2 echo \"stderr: HTTP code = 504\"\n"
+                        + "      exit 1\n"
+                        + "    '''\n"
+                        + "  }\n"
+                        + "}",
+                true));
+
+        WorkflowRun build = jenkins.assertBuildStatus(hudson.model.Result.FAILURE, job.scheduleBuild2(0));
+
+        SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
+        Assertions.assertNotNull(action);
+
+        jenkins.assertLogContains("classified=SCM_TRANSIENT", build);
+        jenkins.assertLogContains("decision=RETRY", build);
+        Assertions.assertEquals("scm-http-5xx", action.getAttempts().get(0).getMatchedRule());
+    }
+
+    @Test
+    void failsFastForMissingRemoteBranch(JenkinsRule jenkins) throws Exception {
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-git-branch-missing");
+        job.setDefinition(new CpsFlowDefinition(
+                "node {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
+                        + "    sh '''\n"
+                        + "      >&2 echo \"git clone --depth 10 --recurse-submodules https://gitlab.example/demo.git -b develop/0.1.0 .\"\n"
+                        + "      >&2 echo \"fatal: Remote branch develop/0.1.0 not found in upstream origin\"\n"
+                        + "      exit 1\n"
+                        + "    '''\n"
+                        + "  }\n"
+                        + "}",
+                true));
+
+        WorkflowRun build = jenkins.assertBuildStatus(hudson.model.Result.FAILURE, job.scheduleBuild2(0));
+
+        SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
+        Assertions.assertNotNull(action);
+
+        jenkins.assertLogContains("classified=SCM_CONFIGURATION_FAILURE", build);
+        jenkins.assertLogContains("decision=FAIL", build);
+        Assertions.assertEquals(
+                "scm-remote-branch-not-found", action.getAttempts().get(0).getMatchedRule());
+    }
+
+    @Test
+    void failsFastForMissingRevision(JenkinsRule jenkins) throws Exception {
+        WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-git-revision-missing");
+        job.setDefinition(new CpsFlowDefinition(
+                "node {\n"
+                        + "  smartRetry(maxRetries: 1, backoff: '" + BACKOFF_FIXED + "', initialDelaySeconds: 0) {\n"
+                        + "    sh '''\n"
+                        + "      >&2 echo \"ERROR: Couldn't find any revision to build. Verify the repository and branch configuration for this job.\"\n"
+                        + "      exit 1\n"
+                        + "    '''\n"
+                        + "  }\n"
+                        + "}",
+                true));
+
+        WorkflowRun build = jenkins.assertBuildStatus(hudson.model.Result.FAILURE, job.scheduleBuild2(0));
+
+        SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
+        Assertions.assertNotNull(action);
+
+        jenkins.assertLogContains("classified=SCM_CONFIGURATION_FAILURE", build);
+        jenkins.assertLogContains("decision=FAIL", build);
+        Assertions.assertEquals(
+                "scm-revision-not-found", action.getAttempts().get(0).getMatchedRule());
+    }
+
+    @Test
     void classifiesConnectionRefusedFromConsoleContextAsNetworkTransient(JenkinsRule jenkins) throws Exception {
         WorkflowJob job = jenkins.createProject(WorkflowJob.class, "smart-retry-connection-refused");
         job.setDefinition(new CpsFlowDefinition(

@@ -208,6 +208,27 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
                                     + SCM_CONTEXT,
                             Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
                     "SCM transport disconnected during clone or fetch"),
+            MessageRule.retryCandidate(
+                    FailureType.SCM_TRANSIENT,
+                    "scm-http-5xx",
+                    Pattern.compile(
+                            SCM_CONTEXT + ".*" + TRANSIENT_HTTP_5XX + "|" + TRANSIENT_HTTP_5XX + ".*" + SCM_CONTEXT,
+                            Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                    "SCM operation returned a transient HTTP 5xx response"),
+            MessageRule.nonRetryable(
+                    FailureType.SCM_CONFIGURATION_FAILURE,
+                    "scm-revision-not-found",
+                    Pattern.compile(
+                            "(couldn't find any revision to build|could not find any revision to build|unable to find revision to build|verify the repository and branch configuration for this job|no revision to build)",
+                            Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                    "Requested SCM revision, branch, tag, or commit does not exist"),
+            MessageRule.nonRetryable(
+                    FailureType.SCM_CONFIGURATION_FAILURE,
+                    "scm-remote-branch-not-found",
+                    Pattern.compile(
+                            "(remote branch .* not found in upstream origin|fatal:\\s*remote branch .* not found|branch .* not found in upstream origin)",
+                            Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                    "Requested SCM branch or ref does not exist"),
             // ARTIFACT_REPO_TRANSIENT
             MessageRule.retryCandidate(
                     FailureType.ARTIFACT_REPO_TRANSIENT,

@@ -140,7 +140,7 @@ The taxonomy should stay intentionally small in the MVP. Accuracy matters more t
 
 Current V1 implementation note:
 
-- the classifier currently emits `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, `IDENTITY_PROVIDER_TRANSIENT`, `PIPELINE_LOGIC_FAILURE`, `COMPILATION_FAILURE`, `TEST_ASSERTION_FAILURE`, `USER_ABORT`, and `UNKNOWN`
+- the classifier currently emits `AGENT_LOST`, `SCM_TRANSIENT`, `NETWORK_TRANSIENT`, `ARTIFACT_REPO_TRANSIENT`, `IDENTITY_PROVIDER_TRANSIENT`, `SCM_CONFIGURATION_FAILURE`, `PIPELINE_LOGIC_FAILURE`, `COMPILATION_FAILURE`, `TEST_ASSERTION_FAILURE`, `USER_ABORT`, and `UNKNOWN`
 - `DEPLOYMENT_FAILURE` remains part of the stable taxonomy, but current V1 rules do not emit it yet
 
 ### 9.1 Retryable-by-Policy Candidates
@@ -181,6 +181,26 @@ Typical signals:
 Default classification:
 
 - retryable candidate
+
+#### `SCM_CONFIGURATION_FAILURE`
+
+Meaning:
+
+- the requested SCM revision, branch, tag, commit, or checkout target does not exist
+
+Typical signals:
+
+- `Couldn't find any revision to build`
+- `Could not find any revision to build`
+- `Verify the repository and branch configuration for this job`
+- `No revision to build`
+- `Remote branch ... not found in upstream origin`
+- `fatal: Remote branch ... not found`
+- `branch ... not found in upstream origin`
+
+Default classification:
+
+- never retry
 
 #### `NETWORK_TRANSIENT`
 

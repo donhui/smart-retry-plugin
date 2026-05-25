@@ -87,6 +87,23 @@ class DeterministicRetryPolicyTest {
     }
 
     @Test
+    void scmConfigurationFailureNeverRetries() {
+        RuntimeSettings settings = new RuntimeSettings(
+                BuiltInProfiles.PROFILE_INFRA,
+                Set.of(FailureType.SCM_CONFIGURATION_FAILURE),
+                3,
+                BackoffStrategy.FIXED,
+                15);
+        FailureClassification classification = FailureClassification.nonRetryable(
+                FailureType.SCM_CONFIGURATION_FAILURE, "scm-remote-branch-not-found", "branch missing");
+
+        RetryDecision decision = policy.decide(classification, settings, 1);
+
+        assertFalse(decision.shouldRetry());
+        assertEquals(FailureType.SCM_CONFIGURATION_FAILURE, decision.getFailureType());
+    }
+
+    @Test
     void builtInProfilesShareRetryTimingDefaults() {
         assertEquals(
                 BuiltInProfiles.conservative().getMaxRetries(),

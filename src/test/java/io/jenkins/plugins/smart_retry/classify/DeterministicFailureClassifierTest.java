@@ -503,6 +503,40 @@ class DeterministicFailureClassifierTest {
     }
 
     @Test
+    void classifiesScmHttp5xxAsScmTransient() {
+        FailureClassification c = classifier.classify(
+                new Exception("git fetch failed"),
+                "using GIT_ASKPASS to set credentials\n"
+                        + "/usr/bin/git fetch --tags --progress http://gitlab.example/repo.git "
+                        + "+refs/heads/*:refs/remotes/origin/*\n"
+                        + "stderr: HTTP code = 504");
+        assertEquals(FailureType.SCM_TRANSIENT, c.getType());
+        assertTrue(c.isRetryCandidate());
+        assertEquals("scm-http-5xx", c.getMatchedRule());
+    }
+
+    @Test
+    void classifiesRemoteBranchNotFoundAsScmConfigurationFailure() {
+        FailureClassification c = classifier.classify(
+                new Exception("git clone failed"),
+                "git clone --depth 10 --recurse-submodules https://gitlab.example/demo.git -b develop/0.1.0 .\n"
+                        + "fatal: Remote branch develop/0.1.0 not found in upstream origin");
+        assertEquals(FailureType.SCM_CONFIGURATION_FAILURE, c.getType());
+        assertFalse(c.isRetryCandidate());
+        assertEquals("scm-remote-branch-not-found", c.getMatchedRule());
+    }
+
+    @Test
+    void classifiesMissingRevisionAsScmConfigurationFailure() {
+        FailureClassification c = classifier.classify(
+                new Exception("checkout failed"),
+                "ERROR: Couldn't find any revision to build. Verify the repository and branch configuration for this job.");
+        assertEquals(FailureType.SCM_CONFIGURATION_FAILURE, c.getType());
+        assertFalse(c.isRetryCandidate());
+        assertEquals("scm-revision-not-found", c.getMatchedRule());
+    }
+
+    @Test
     void classifiesLdapReauthenticationFailureAsIdentityProviderTransient() {
         FailureClassification c = classifier.classify(
                 new Exception("request url http://ldap.example/api, response code 401"),

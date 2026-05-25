@@ -33,6 +33,7 @@ Implementation decisions made during delivery:
 - Unknown profile names fail fast at step startup instead of silently falling back to `conservative`
 - The global configuration surface ships as `defaultProfile`, `consoleContextLines`, shared retry timing defaults, named custom profiles, and `disabledBuiltInRules`
 - Constrained custom classification-rule authoring is deferred to post-MVP V2; the pilot release is scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists
+- Deterministic SCM input errors such as missing revisions, branches, tags, or commit SHAs never retry
 - Attempt-scoped console log context is captured per-attempt using a bounded tail of `Run` console log, scoped via a marker line, to support `sh`-style failures where stderr does not appear in the thrown exception
 - In-flight Pipeline execution survives Jenkins restarts by keeping only primitive attempt state in `StepExecution` and rescheduling in `onResume()`
 - The initial target package is `io.jenkins.plugins.smart_retry`
@@ -193,3 +194,8 @@ Recommended next coding slice:
 
 - [x] Reduced the shared default `initialDelaySeconds` from `15` to `10` so the first retry remains conservative without adding as much latency to common one-retry recovery paths
 - [x] Synced the PRD, development plan, implementation plan, README, and focused tests with the updated default retry delay
+
+### 2026-05-25
+
+- [x] Added SCM HTTP 5xx handling for Git fetch/clone/checkout failures
+- [x] Added `SCM_CONFIGURATION_FAILURE` for missing revisions, branches, tags, or commit SHAs

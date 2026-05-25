@@ -10,6 +10,7 @@ public final class DeterministicRetryPolicy implements RetryPolicy {
     private static final Set<FailureType> HARD_STOP_TYPES = Set.of(
             FailureType.UNKNOWN,
             FailureType.USER_ABORT,
+            FailureType.SCM_CONFIGURATION_FAILURE,
             FailureType.PIPELINE_LOGIC_FAILURE,
             FailureType.COMPILATION_FAILURE,
             FailureType.TEST_ASSERTION_FAILURE,

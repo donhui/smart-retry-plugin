@@ -59,6 +59,8 @@ Enum for internal failure categories.
 
 See [`mvp-prd.md §9`](./mvp-prd.md) for the full taxonomy, retryable/non-retryable classification, and V1 implementation notes.
 
+Current V1 also includes `SCM_CONFIGURATION_FAILURE` for deterministic SCM target-selection errors such as a missing revision, branch, tag, or commit.
+
 ## `FailureClassification`
 
 Suggested fields:

@@ -52,6 +52,11 @@ public final class SmartRetryReferenceCatalog {
                     "Current classifier emits this type only for narrow LDAP reauthentication failure signals rather than generic 401 responses.",
                     "Identity backend instability can clear on a later attempt, but Smart Retry keeps this out of the conservative profile."),
             failureType(
+                    FailureType.SCM_CONFIGURATION_FAILURE,
+                    "The requested SCM revision, branch, tag, commit, or checkout target does not exist.",
+                    "Current classifier emits this type for deterministic revision-not-found and branch-not-found failures rather than transient transport problems.",
+                    "This is a configuration or input error, so Smart Retry never retries it."),
+            failureType(
                     FailureType.USER_ABORT,
                     "The build was intentionally interrupted by a user or explicit interruption path.",
                     "Current classifier emits this type for FlowInterruptedException paths.",
@@ -258,6 +263,20 @@ public final class SmartRetryReferenceCatalog {
                     "SCM context such as git clone/fetch/checkout plus curl 56 | RPC failed | unexpected disconnect while reading sideband packet | early EOF | index-pack failed",
                     DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "This only applies when the classifier sees clear Git transport context around clone or fetch interruption signals."),
+            matchedRule(
+                    "scm-revision-not-found",
+                    FailureType.SCM_CONFIGURATION_FAILURE,
+                    TRIGGER_KIND_MESSAGE_PATTERN,
+                    "Couldn't find any revision to build | could not find any revision to build | verify the repository and branch configuration for this job | no revision to build",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
+                    "This is a deterministic SCM target-selection error covering missing branches, tags, revisions, or commit SHAs."),
+            matchedRule(
+                    "scm-remote-branch-not-found",
+                    FailureType.SCM_CONFIGURATION_FAILURE,
+                    TRIGGER_KIND_MESSAGE_PATTERN,
+                    "remote branch ... not found in upstream origin | fatal: remote branch ... not found | branch ... not found in upstream origin",
+                    DEFAULT_BEHAVIOR_NEVER_RETRY,
+                    "This is a deterministic SCM target-selection error rather than a transient checkout failure."),
             matchedRule(
                     "network-could-not-resolve-host",
                     FailureType.NETWORK_TRANSIENT,

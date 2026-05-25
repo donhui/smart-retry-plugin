@@ -81,6 +81,7 @@ Exit criteria:
 - LDAP identity-provider retries should require narrow reauthentication-specific context rather than treating generic `401` responses as transient
 - Git transport interruption signals such as `curl 56`, `unexpected disconnect`, `early EOF`, and `index-pack failed` should require explicit SCM context before they are classified as `SCM_TRANSIENT`
 - high-confidence TypeScript, Go, and C/C++ compiler diagnostics should classify as `COMPILATION_FAILURE`, while generic wrapper failures such as bare `npm ERR!` should remain unmatched
+- deterministic SCM input errors such as a missing revision, branch, tag, or commit should classify as `SCM_CONFIGURATION_FAILURE` and fail fast rather than entering any retry profile
 
 ## Milestone 3: Retry Policy and Backoff
 
