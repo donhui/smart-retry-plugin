@@ -500,6 +500,24 @@ class DeterministicFailureClassifierTest {
     }
 
     @Test
+    void classifiesPythonGitlabGetError502AsNetworkTransient() {
+        FailureClassification c = classifier.classify(
+                new Exception("gitlab.exceptions.GitlabGetError: 502: GitLab is not responding"), null);
+        assertEquals(FailureType.NETWORK_TRANSIENT, c.getType());
+        assertTrue(c.isRetryCandidate());
+        assertEquals("network-python-gitlab-5xx", c.getMatchedRule());
+    }
+
+    @Test
+    void doesNotClassifyPythonGitlabGetError404AsNetworkTransient() {
+        FailureClassification c =
+                classifier.classify(new Exception("gitlab.exceptions.GitlabGetError: 404: Project Not Found"), null);
+        assertEquals(FailureType.UNKNOWN, c.getType());
+        assertFalse(c.isRetryCandidate());
+        assertNull(c.getMatchedRule());
+    }
+
+    @Test
     void classifiesScmContextCouldNotResolveHostAsScmTransient() {
         FailureClassification c = classifier.classify(
                 new Exception("fatal: unable to access repository"),

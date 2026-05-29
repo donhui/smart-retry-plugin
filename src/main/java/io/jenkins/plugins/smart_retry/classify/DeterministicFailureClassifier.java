@@ -290,6 +290,14 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
             // NETWORK_TRANSIENT
             MessageRule.retryCandidate(
                     FailureType.NETWORK_TRANSIENT,
+                    "network-python-gitlab-5xx",
+                    Pattern.compile(
+                            "(gitlab\\.exceptions\\.gitlabgeterror|gitlabgeterror).*(502|503|504|gitlab is not responding)"
+                                    + "|(502|503|504|gitlab is not responding).*(gitlab\\.exceptions\\.gitlabgeterror|gitlabgeterror)",
+                            Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                    "python-gitlab reported a transient GitLab 5xx response"),
+            MessageRule.retryCandidate(
+                    FailureType.NETWORK_TRANSIENT,
                     "network-could-not-resolve-host",
                     Pattern.compile("could not resolve host", Pattern.CASE_INSENSITIVE),
                     "External service host could not be resolved"),
