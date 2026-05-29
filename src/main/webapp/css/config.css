@@ -1,0 +1,33 @@
+/* Smart Retry global configuration styles */
+
+.sr-prefixed-input {
+    display: inline-flex;
+    align-items: stretch;
+    min-width: 420px;
+    max-width: 100%;
+}
+
+.sr-prefixed-input__prefix {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid var(--input-border, #cfd7df);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    background: var(--background, #f7f8fa);
+    color: var(--text-color-secondary, #5f6b7a);
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.sr-prefixed-input__field {
+    display: inline-flex;
+    flex: 1 1 auto;
+    min-width: 180px;
+}
+
+.sr-prefixed-input__field input[type="text"] {
+    width: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}

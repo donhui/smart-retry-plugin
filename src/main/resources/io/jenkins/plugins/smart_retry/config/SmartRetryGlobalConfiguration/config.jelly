@@ -24,6 +24,19 @@
             </f:entry>
         </f:advanced>
 
+        <f:entry title="Custom classification rules">
+            <div class="jenkins-description">
+                Use these only for narrow, environment-specific transient patterns that the built-in classifier does not cover yet.
+            </div>
+            <f:repeatableProperty field="customClassificationRules" add="Add custom rule" header="Custom rule">
+                <f:block>
+                    <div align="right">
+                        <f:repeatableDeleteButton />
+                    </div>
+                </f:block>
+            </f:repeatableProperty>
+        </f:entry>
+
         <f:entry title="Custom profiles">
             <div class="jenkins-description">
                 Define named profiles only when the built-in <code>conservative</code> and <code>infra</code> profiles are not enough.

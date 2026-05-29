@@ -1,0 +1,28 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <link rel="stylesheet" href="${rootURL}/plugin/smart-retry/css/config.css" />
+    <f:entry title="Name" field="nameSuffix">
+        <div class="sr-prefixed-input">
+            <span class="sr-prefixed-input__prefix">custom-rule-</span>
+            <span class="sr-prefixed-input__field"><f:textbox /></span>
+        </div>
+        <div class="jenkins-description">
+            Stable identifier suffix for this custom classification rule.
+        </div>
+    </f:entry>
+    <f:entry title="Pattern" field="pattern">
+        <f:expandableTextbox />
+        <div class="jenkins-description">
+            Java regular expression matched against the failure text and recent console context.
+        </div>
+    </f:entry>
+    <f:entry title="Failure type" field="failureType">
+        <f:select />
+    </f:entry>
+    <f:entry title="Enabled" field="enabled">
+        <f:checkbox />
+    </f:entry>
+    <f:entry title="Description" field="description">
+        <f:textbox />
+    </f:entry>
+</j:jelly>

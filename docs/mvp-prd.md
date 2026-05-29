@@ -443,11 +443,11 @@ Current V1 implementation note:
 - built-in profiles remain fixed as `conservative` and `infra`
 - administrators can define any number of named custom profiles, including a profile literally named `custom` if they want that shorthand
 - current V1 custom profiles only configure retryable transient `FailureType` allowlists
-- custom classification-rule authoring remains follow-on work
+- current V1 also supports ordered global custom classification rules for narrow regex-to-`FailureType` mappings
 
 ### 11.4 Constrained Custom Rule Design
 
-Follow-on custom rules should be intentionally narrow:
+Custom rules should be intentionally narrow:
 
 - built-in deterministic rules remain the baseline and cannot be deleted
 - custom rules should be additive, not a general-purpose rules engine
@@ -543,21 +543,20 @@ Current V1 global configuration supports:
 - shared retry count, backoff, and initial delay defaults for all profiles
 - named custom profiles with configurable retryable transient `FailureType` values
 - built-in rule disabling by stable rule id
+- ordered custom classification rules that map regex patterns to supported transient `FailureType` values
 
 Follow-on configuration, if needed after pilot feedback, may support:
 
-- message-pattern based rules
 - profile-relative `retryOn` and `skipOn`
 
 Suggested first custom-rule evaluation order:
 
 1. built-in hard-stop exception rules
-2. built-in rule disable check for message-based rules
-3. custom non-retryable rules
+2. custom rules
+3. built-in rule disable check for message-based rules
 4. built-in non-retryable message rules
 5. built-in retryable rules
-6. custom retryable rules
-7. `UNKNOWN`
+6. `UNKNOWN`
 
 The V1 UI should stay simple. Reliability and clarity are more important than advanced rule authoring.
 

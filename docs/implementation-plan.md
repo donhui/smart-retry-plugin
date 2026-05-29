@@ -308,10 +308,9 @@ Follow-on configuration candidates:
 
 - profile defaults
 - built-in rule disabling by stable rule id
-- custom message patterns
 - persisted custom profile settings
 
-Suggested constrained V2 custom-rule model:
+Suggested constrained custom-rule model:
 
 - `Set<String> disabledBuiltInRules`
 - `List<CustomClassificationRule> customRules`
@@ -343,7 +342,7 @@ Suggested initial configuration model:
 Possible structure:
 
 - current V1: a single `SmartRetryGlobalConfiguration` object with scalar settings
-- possible V2 direction: a separate persisted `CustomClassificationRule` list owned by global configuration rather than spreading regex state across profiles
+- current V1: a single `SmartRetryGlobalConfiguration` object with scalar settings plus a separate persisted `CustomClassificationRule` list
 
 ## `CustomProfileSettings`
 
@@ -364,7 +363,7 @@ Current V1 implementation note:
 - built-in profile membership still comes from `BuiltInProfiles`
 - globally configured retry timing defaults participate in the same step-override merge path for built-ins and customs
 - unknown profile names now fail fast instead of silently falling back to `conservative`
-- broader message-pattern authoring remains future work
+- broader message-pattern authoring is scoped to global custom classification rules
 
 For the custom-rule evaluation order, see [`mvp-prd.md §14`](./mvp-prd.md).
 
@@ -463,6 +462,7 @@ What they should verify:
 - non-retryable failure stops immediately
 - default profile settings override correctly when the step omits `profile`
 - custom rules, if enabled later, are surfaced clearly in logs and run-action data
+- custom rules are surfaced clearly in logs and run-action data
 
 ## UI and Config Tests
 

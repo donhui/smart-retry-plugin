@@ -6,9 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.jenkins.plugins.smart_retry.config.CustomClassificationRule;
 import io.jenkins.plugins.smart_retry.model.FailureClassification;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import java.net.SocketTimeoutException;
+import java.util.List;
 import java.util.Set;
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.junit.jupiter.api.Test;
@@ -150,6 +152,25 @@ class DeterministicFailureClassifierTest {
         assertEquals(FailureType.SCM_TRANSIENT, c.getType());
         assertTrue(c.isRetryCandidate());
         assertEquals("scm-remote-end-hung-up", c.getMatchedRule());
+    }
+
+    @Test
+    void customClassificationRulesTakePriorityOverBuiltInMessageRules() {
+        CustomClassificationRule rule = new CustomClassificationRule();
+        rule.setName("custom-network-reset");
+        rule.setPattern("connection reset");
+        rule.setFailureType(FailureType.NETWORK_TRANSIENT);
+        rule.setDescription("Custom network reset");
+
+        FailureClassifier classifierWithCustomRule = new DeterministicFailureClassifier(Set.of(), List.of(rule));
+
+        FailureClassification c = classifierWithCustomRule.classify(
+                new Exception("remote end hung up unexpectedly"),
+                "Could not transfer artifact from/to repo: Connection reset");
+
+        assertEquals(FailureType.NETWORK_TRANSIENT, c.getType());
+        assertTrue(c.isRetryCandidate());
+        assertEquals("custom-rule-custom-network-reset", c.getMatchedRule());
     }
 
     @Test

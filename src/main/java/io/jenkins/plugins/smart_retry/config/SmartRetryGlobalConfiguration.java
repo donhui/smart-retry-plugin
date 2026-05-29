@@ -2,6 +2,7 @@ package io.jenkins.plugins.smart_retry.config;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.Extension;
+import hudson.model.Descriptor.FormException;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.classify.DeterministicFailureClassifier;
@@ -39,6 +40,7 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
     private int initialDelaySeconds = BuiltInProfiles.DEFAULT_INITIAL_DELAY_SECONDS;
     private List<CustomProfileSettings> customProfiles = new ArrayList<>();
     private String disabledBuiltInRules = "";
+    private List<CustomClassificationRule> customClassificationRules = new ArrayList<>();
 
     public SmartRetryGlobalConfiguration() {
         load();
@@ -152,12 +154,24 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         this.disabledBuiltInRules = formatDisabledBuiltInRuleIds(parseDisabledBuiltInRuleIds(disabledBuiltInRules));
     }
 
+    public List<CustomClassificationRule> getCustomClassificationRules() {
+        return new ArrayList<>(customClassificationRules());
+    }
+
+    @DataBoundSetter
+    public void setCustomClassificationRules(@CheckForNull List<CustomClassificationRule> customClassificationRules) {
+        this.customClassificationRules = sanitizeCustomClassificationRules(customClassificationRules);
+    }
+
     @Override
     @POST
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
+        normalizeRepeatableProperties(json);
         validateCustomProfilesForm(json);
+        validateCustomClassificationRulesForm(json);
         req.bindJSON(this, json);
         validateCustomProfiles(customProfiles());
+        validateCustomClassificationRules(customClassificationRules());
         save();
         return true;
     }
@@ -220,6 +234,13 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.warning("Unknown rule ids will be ignored when saving: " + String.join(", ", unknown));
     }
 
+    public FormValidation doCheckCustomClassificationRules(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok("No custom rules are configured.");
+        }
+        return FormValidation.ok();
+    }
+
     public FormValidation doCheckConsoleContextLines(@QueryParameter String value) {
         return validateNonNegativeInteger("Console context lines", value);
     }
@@ -237,6 +258,39 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             customProfiles = new ArrayList<>();
         }
         return customProfiles;
+    }
+
+    private List<CustomClassificationRule> customClassificationRules() {
+        if (customClassificationRules == null) {
+            customClassificationRules = new ArrayList<>();
+        }
+        return customClassificationRules;
+    }
+
+    void normalizeRepeatableProperties(JSONObject json) {
+        if (isMissingOrEmptyRepeatable(json, "customProfiles")) {
+            json.put("customProfiles", JSONArray.fromObject(List.of()));
+        }
+        if (isMissingOrEmptyRepeatable(json, "customClassificationRules")) {
+            json.put("customClassificationRules", JSONArray.fromObject(List.of()));
+        }
+    }
+
+    private static boolean isMissingOrEmptyRepeatable(JSONObject json, String fieldName) {
+        if (!json.has(fieldName)) {
+            return true;
+        }
+        Object rawValue = json.opt(fieldName);
+        if (rawValue == null) {
+            return true;
+        }
+        if (rawValue instanceof JSONArray array) {
+            return array.isEmpty();
+        }
+        if (rawValue instanceof JSONObject object) {
+            return object.isEmpty();
+        }
+        return false;
     }
 
     static void validateCustomProfilesForm(JSONObject json) throws FormException {
@@ -270,6 +324,59 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
+    static void validateCustomClassificationRulesForm(JSONObject json) throws FormException {
+        Object rawRules = json.opt("customClassificationRules");
+        if (rawRules == null) {
+            return;
+        }
+
+        List<JSONObject> customRules = submittedCustomClassificationRules(rawRules);
+        Set<String> seenNames = new LinkedHashSet<>();
+        for (JSONObject customRule : customRules) {
+            validateSubmittedCustomClassificationRule(customRule, seenNames);
+        }
+    }
+
+    static void validateCustomClassificationRules(List<CustomClassificationRule> customClassificationRules)
+            throws FormException {
+        if (customClassificationRules == null || customClassificationRules.isEmpty()) {
+            return;
+        }
+        Set<String> seenNames = new LinkedHashSet<>();
+        for (CustomClassificationRule customRule : customClassificationRules) {
+            if (customRule == null) {
+                continue;
+            }
+            String normalizedName = CustomClassificationRule.normalizeName(customRule.getName());
+            if (normalizedName.isBlank()) {
+                throw new FormException("Custom classification rule name is required.", "customClassificationRules");
+            }
+            if (!seenNames.add(normalizedName)) {
+                throw new FormException(
+                        "Custom classification rule '" + normalizedName + "' is defined more than once.",
+                        "customClassificationRules");
+            }
+            if (CustomClassificationRule.normalizePattern(customRule.getPattern())
+                    .isBlank()) {
+                throw new FormException(
+                        "Custom classification rule '" + normalizedName + "' must define a regex pattern.",
+                        "customClassificationRules");
+            }
+            if (!CustomClassificationRule.supportedFailureTypes().contains(customRule.getFailureType())) {
+                throw new FormException(
+                        "Custom classification rule '" + normalizedName + "' uses an unsupported failure type.",
+                        "customClassificationRules");
+            }
+            try {
+                customRule.compiledPattern();
+            } catch (RuntimeException e) {
+                throw new FormException(
+                        "Custom classification rule '" + normalizedName + "' has an invalid regex pattern.",
+                        "customClassificationRules");
+            }
+        }
+    }
+
     private static boolean hasConfiguredFailureTypes(Object selections) {
         if (selections instanceof JSONArray array) {
             return !array.isEmpty();
@@ -294,6 +401,20 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return customProfiles;
     }
 
+    private static List<JSONObject> submittedCustomClassificationRules(Object rawRules) {
+        List<JSONObject> customRules = new ArrayList<>();
+        if (rawRules instanceof JSONArray array) {
+            for (Object candidate : array) {
+                if (candidate instanceof JSONObject ruleJson) {
+                    customRules.add(ruleJson);
+                }
+            }
+        } else if (rawRules instanceof JSONObject ruleJson) {
+            customRules.add(ruleJson);
+        }
+        return customRules;
+    }
+
     private static void validateSubmittedCustomProfile(JSONObject customProfile, Set<String> seenNames)
             throws FormException {
         String normalizedName = CustomProfileSettings.normalizeName(customProfile.optString("name"));
@@ -312,6 +433,54 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             throw new FormException(
                     "Custom profile '" + normalizedName + "' must select at least one retryable failure type.",
                     "customProfiles");
+        }
+    }
+
+    private static void validateSubmittedCustomClassificationRule(JSONObject customRule, Set<String> seenNames)
+            throws FormException {
+        String normalizedName = CustomClassificationRule.normalizeName(customRule.optString("nameSuffix"));
+        if (normalizedName.isBlank()) {
+            throw new FormException("Custom classification rule name is required.", "customClassificationRules");
+        }
+        if (!seenNames.add(normalizedName)) {
+            throw new FormException(
+                    "Custom classification rule '" + normalizedName + "' is defined more than once.",
+                    "customClassificationRules");
+        }
+
+        String pattern = CustomClassificationRule.normalizePattern(customRule.optString("pattern"));
+        if (pattern.isBlank()) {
+            throw new FormException(
+                    "Custom classification rule '" + normalizedName + "' must define a regex pattern.",
+                    "customClassificationRules");
+        }
+        try {
+            java.util.regex.Pattern.compile(pattern);
+        } catch (RuntimeException e) {
+            throw new FormException(
+                    "Custom classification rule '" + normalizedName + "' has an invalid regex pattern.",
+                    "customClassificationRules");
+        }
+
+        String rawFailureType = customRule.optString("failureType");
+        if (rawFailureType == null || rawFailureType.isBlank()) {
+            throw new FormException(
+                    "Custom classification rule '" + normalizedName + "' must select a failure type.",
+                    "customClassificationRules");
+        }
+        try {
+            io.jenkins.plugins.smart_retry.model.FailureType failureType =
+                    io.jenkins.plugins.smart_retry.model.FailureType.valueOf(
+                            rawFailureType.trim().toUpperCase(Locale.ROOT));
+            if (!CustomClassificationRule.supportedFailureTypes().contains(failureType)) {
+                throw new FormException(
+                        "Custom classification rule '" + normalizedName + "' uses an unsupported failure type.",
+                        "customClassificationRules");
+            }
+        } catch (IllegalArgumentException e) {
+            throw new FormException(
+                    "Custom classification rule '" + normalizedName + "' uses an unsupported failure type.",
+                    "customClassificationRules");
         }
     }
 
@@ -338,6 +507,39 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
             orderedProfiles.put(normalizedName, sanitized);
         }
         return new ArrayList<>(orderedProfiles.values());
+    }
+
+    private static List<CustomClassificationRule> sanitizeCustomClassificationRules(
+            @CheckForNull List<CustomClassificationRule> rawRules) {
+        if (rawRules == null || rawRules.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<String, CustomClassificationRule> orderedRules = new LinkedHashMap<>();
+        for (CustomClassificationRule rawRule : rawRules) {
+            if (rawRule == null) {
+                continue;
+            }
+            String normalizedName = CustomClassificationRule.normalizeName(rawRule.getName());
+            String normalizedPattern = CustomClassificationRule.normalizePattern(rawRule.getPattern());
+            if (normalizedName.isBlank() || normalizedPattern.isBlank()) {
+                continue;
+            }
+            if (!CustomClassificationRule.supportedFailureTypes().contains(rawRule.getFailureType())) {
+                continue;
+            }
+            if (orderedRules.containsKey(normalizedName)) {
+                continue;
+            }
+
+            CustomClassificationRule sanitized = new CustomClassificationRule();
+            sanitized.setName(normalizedName);
+            sanitized.setPattern(normalizedPattern);
+            sanitized.setFailureType(rawRule.getFailureType());
+            sanitized.setEnabled(rawRule.isEnabled());
+            sanitized.setDescription(rawRule.getDescription());
+            orderedRules.put(normalizedName, sanitized);
+        }
+        return new ArrayList<>(orderedRules.values());
     }
 
     private static String normalize(@CheckForNull String value, @CheckForNull String fallback) {

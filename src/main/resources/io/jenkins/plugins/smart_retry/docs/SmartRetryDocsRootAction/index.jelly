@@ -19,6 +19,7 @@
                 <button class="sr-tab-btn" data-tab="tab-overview" role="tab">Quick Comparison</button>
                 <button class="sr-tab-btn" data-tab="tab-details" role="tab">Failure Type Details</button>
                 <button class="sr-tab-btn" data-tab="tab-rules" role="tab">Matched Rules</button>
+                <button class="sr-tab-btn" data-tab="tab-custom-rules" role="tab">Custom Rules</button>
             </div>
 
             <!-- Tab 1: Quick Comparison -->
@@ -147,6 +148,34 @@
                                         <td>${d.rationale}</td>
                                     </tr>
                                 </j:forEach>
+                            </j:forEach>
+                        </tbody>
+                    </table>
+                </l:card>
+            </div>
+
+            <div id="tab-custom-rules" class="sr-tab-panel">
+                <l:card title="Custom Rules">
+                    <p>These are the current global custom classification rules from Jenkins configuration.</p>
+                    <table class="pane sortable">
+                        <thead>
+                            <tr>
+                                <th align="left">Rule name</th>
+                                <th align="left">Failure type</th>
+                                <th align="left">Enabled</th>
+                                <th align="left">Pattern</th>
+                                <th align="left">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <j:forEach var="d" items="${it.customRules}">
+                                <tr id="${d.anchorId}">
+                                    <td><strong>${d.name}</strong></td>
+                                    <td>${d.failureTypeName}</td>
+                                    <td>${d.enabled}</td>
+                                    <td><code>${d.pattern}</code></td>
+                                    <td>${d.description}</td>
+                                </tr>
                             </j:forEach>
                         </tbody>
                     </table>

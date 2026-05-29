@@ -11,6 +11,17 @@ class SmartRetryDocsRootActionTest {
 
     @Test
     void rendersReferenceCatalog(JenkinsRule jenkins) throws Exception {
+        io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration cfg =
+                io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration.get();
+        io.jenkins.plugins.smart_retry.config.CustomClassificationRule rule =
+                new io.jenkins.plugins.smart_retry.config.CustomClassificationRule();
+        rule.setNameSuffix("network-reset");
+        rule.setPattern("connection reset");
+        rule.setFailureType(io.jenkins.plugins.smart_retry.model.FailureType.NETWORK_TRANSIENT);
+        rule.setDescription("Network reset");
+        cfg.setCustomClassificationRules(java.util.List.of(rule));
+        cfg.save();
+
         HtmlPage page = jenkins.createWebClient().goTo("smartRetryDocs");
 
         String text = page.asNormalizedText();
@@ -21,6 +32,7 @@ class SmartRetryDocsRootActionTest {
         Assertions.assertTrue(html.contains("data-tab=\"tab-overview\""));
         Assertions.assertTrue(html.contains("data-tab=\"tab-details\""));
         Assertions.assertTrue(html.contains("data-tab=\"tab-rules\""));
+        Assertions.assertTrue(html.contains("data-tab=\"tab-custom-rules\""));
         // Quick Comparison tab: failure types appear in table
         Assertions.assertTrue(html.contains("id=\"failure-type-agent-lost\""));
         Assertions.assertTrue(html.contains("id=\"failure-type-scm-transient\""));
@@ -33,6 +45,9 @@ class SmartRetryDocsRootActionTest {
         Assertions.assertTrue(html.contains("id=\"rule-agent-remoting-channel-closed\""));
         Assertions.assertTrue(html.contains("data-failure-type=\"SCM_TRANSIENT\""));
         Assertions.assertTrue(html.contains("Trigger kind"));
+        // Custom rules tab: configured custom rules are surfaced
+        Assertions.assertTrue(html.contains("custom-rule-network-reset"));
+        Assertions.assertTrue(html.contains("connection reset"));
         // Filter select populated with failure type names
         Assertions.assertTrue(html.contains("sr-rules-filter"));
     }

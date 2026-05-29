@@ -1,7 +1,9 @@
 package io.jenkins.plugins.smart_retry.model;
 
 import io.jenkins.plugins.smart_retry.classify.DeterministicFailureClassifier;
+import io.jenkins.plugins.smart_retry.config.CustomClassificationRule;
 import io.jenkins.plugins.smart_retry.config.CustomProfileSettings;
+import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -442,6 +444,24 @@ public final class SmartRetryReferenceCatalog {
         return Collections.unmodifiableList(groups);
     }
 
+    public static List<CustomRuleDoc> customRules() {
+        SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
+        if (cfg == null) {
+            return List.of();
+        }
+        List<CustomRuleDoc> docs = new ArrayList<>();
+        for (CustomClassificationRule rule : cfg.getCustomClassificationRules()) {
+            docs.add(new CustomRuleDoc(
+                    slugify(rule.getName()),
+                    rule.getName(),
+                    rule.getPattern(),
+                    rule.getFailureType().name(),
+                    rule.isEnabled(),
+                    rule.getDescription()));
+        }
+        return Collections.unmodifiableList(docs);
+    }
+
     private static FailureTypeDoc failureType(
             FailureType type, String meaning, String currentImplementation, String rationale) {
         return new FailureTypeDoc(
@@ -756,6 +776,54 @@ public final class SmartRetryReferenceCatalog {
 
         public boolean isDefaultExpanded() {
             return "AGENT_LOST".equals(failureTypeName) || "SCM_TRANSIENT".equals(failureTypeName);
+        }
+    }
+
+    public static final class CustomRuleDoc {
+        private final String anchorId;
+        private final String name;
+        private final String pattern;
+        private final String failureTypeName;
+        private final boolean enabled;
+        private final String description;
+
+        public CustomRuleDoc(
+                String anchorId,
+                String name,
+                String pattern,
+                String failureTypeName,
+                boolean enabled,
+                String description) {
+            this.anchorId = anchorId;
+            this.name = name;
+            this.pattern = pattern;
+            this.failureTypeName = failureTypeName;
+            this.enabled = enabled;
+            this.description = description;
+        }
+
+        public String getAnchorId() {
+            return anchorId;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getPattern() {
+            return pattern;
+        }
+
+        public String getFailureTypeName() {
+            return failureTypeName;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public String getDescription() {
+            return description;
         }
     }
 }

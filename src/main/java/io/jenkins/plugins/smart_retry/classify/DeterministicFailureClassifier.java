@@ -1,6 +1,7 @@
 package io.jenkins.plugins.smart_retry.classify;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import io.jenkins.plugins.smart_retry.config.CustomClassificationRule;
 import io.jenkins.plugins.smart_retry.model.FailureClassification;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import java.io.EOFException;
@@ -332,13 +333,20 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
     private static final Set<String> SUPPORTED_DISABLED_BUILT_IN_RULE_IDS = computeSupportedDisabledBuiltInRuleIds();
 
     private final Set<String> disabledBuiltInRuleIds;
+    private final List<ConfiguredRule> customClassificationRules;
 
     public DeterministicFailureClassifier() {
-        this(Set.of());
+        this(Set.of(), List.of());
     }
 
     public DeterministicFailureClassifier(Set<String> disabledBuiltInRuleIds) {
+        this(disabledBuiltInRuleIds, List.of());
+    }
+
+    public DeterministicFailureClassifier(
+            Set<String> disabledBuiltInRuleIds, List<CustomClassificationRule> customClassificationRules) {
         this.disabledBuiltInRuleIds = normalizeDisabledBuiltInRuleIds(disabledBuiltInRuleIds);
+        this.customClassificationRules = normalizeCustomClassificationRules(customClassificationRules);
     }
 
     public static Set<String> supportedDisabledBuiltInRuleIds() {
@@ -356,6 +364,11 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
 
         String combinedMessage = combineMessages(error, messageContext);
         if (combinedMessage != null) {
+            for (ConfiguredRule customRule : customClassificationRules) {
+                if (customRule.matches(combinedMessage)) {
+                    return customRule.toClassification();
+                }
+            }
             for (MessageRule rule : MESSAGE_RULES) {
                 if (isBuiltInRuleDisabled(rule)) {
                     continue;
@@ -499,6 +512,29 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
         return Collections.unmodifiableSet(normalized);
     }
 
+    private static List<ConfiguredRule> normalizeCustomClassificationRules(List<CustomClassificationRule> rawRules) {
+        if (rawRules == null || rawRules.isEmpty()) {
+            return List.of();
+        }
+        java.util.ArrayList<ConfiguredRule> normalized = new java.util.ArrayList<>();
+        for (CustomClassificationRule rawRule : rawRules) {
+            if (rawRule == null || !rawRule.isEnabled()) {
+                continue;
+            }
+            String name = CustomClassificationRule.normalizeName(rawRule.getName());
+            String pattern = CustomClassificationRule.normalizePattern(rawRule.getPattern());
+            FailureType type = rawRule.getFailureType();
+            if (name.isBlank() || pattern.isBlank() || type == null || type == FailureType.UNKNOWN) {
+                continue;
+            }
+            normalized.add(new ConfiguredRule(name, type, rawRule.compiledPattern(), rawRule.getDescription()));
+        }
+        if (normalized.isEmpty()) {
+            return List.of();
+        }
+        return Collections.unmodifiableList(normalized);
+    }
+
     private record MessageRule(FailureType type, String name, Pattern pattern, String summary, boolean retryCandidate) {
 
         static MessageRule retryCandidate(FailureType type, String name, Pattern pattern, String summary) {
@@ -522,6 +558,41 @@ public final class DeterministicFailureClassifier implements FailureClassifier {
                 return FailureClassification.retryCandidate(type, name, summary);
             }
             return FailureClassification.nonRetryable(type, name, summary);
+        }
+    }
+
+    private record ConfiguredRule(FailureType type, String name, Pattern pattern, String summary) {
+
+        ConfiguredRule(String name, FailureType type, Pattern pattern, @CheckForNull String summary) {
+            this(
+                    type,
+                    name,
+                    pattern,
+                    summary == null || summary.isBlank()
+                            ? "Matched custom classification rule '" + name + "'"
+                            : summary.trim());
+        }
+
+        boolean matches(String message) {
+            return pattern.matcher(message).find();
+        }
+
+        FailureClassification toClassification() {
+            if (isRetryCandidateType(type)) {
+                return FailureClassification.retryCandidate(type, name, summary);
+            }
+            return FailureClassification.nonRetryable(type, name, summary);
+        }
+
+        private static boolean isRetryCandidateType(FailureType type) {
+            return switch (type) {
+                case AGENT_LOST,
+                        SCM_TRANSIENT,
+                        NETWORK_TRANSIENT,
+                        ARTIFACT_REPO_TRANSIENT,
+                        IDENTITY_PROVIDER_TRANSIENT -> true;
+                default -> false;
+            };
         }
     }
 }

@@ -48,6 +48,7 @@ The plugin supports Jenkins global configuration for:
 - default profile selection
 - shared retry defaults
 - named custom profiles
+- ordered custom classification rules for narrow environment-specific regex matches
 - built-in rule disabling by individual built-in retry rule id
 - bounded console-log context depth used during classification
 
@@ -62,6 +63,8 @@ Note: some steps, especially `sh`, often put the most useful error text only in 
 | named custom profiles | team-specific policy choices defined by administrators | only the failure categories the custom profile allows |
 
 Named custom profiles are defined in Jenkins global configuration and let teams opt into a controlled retry policy without changing the built-in classifier behavior.
+
+Custom classification rules are also defined in Jenkins global configuration. They let administrators map narrow, environment-specific log patterns to one of the supported transient failure types without changing Pipeline DSL usage.
 
 ## Quick Start
 

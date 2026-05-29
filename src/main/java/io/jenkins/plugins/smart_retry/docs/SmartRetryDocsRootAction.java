@@ -36,6 +36,10 @@ public final class SmartRetryDocsRootAction implements RootAction {
         return SmartRetryReferenceCatalog.matchedRuleGroups();
     }
 
+    public List<SmartRetryReferenceCatalog.CustomRuleDoc> getCustomRules() {
+        return SmartRetryReferenceCatalog.customRules();
+    }
+
     public List<String> getFailureTypeNames() {
         return SmartRetryReferenceCatalog.failureTypes().stream()
                 .map(SmartRetryReferenceCatalog.FailureTypeDoc::getName)

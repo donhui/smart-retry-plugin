@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.List;
@@ -41,6 +42,16 @@ class CustomProfileSettingsTest {
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName(BuiltInProfiles.PROFILE_INFRA).kind);
         assertEquals(FormValidation.Kind.OK, descriptor.doCheckName("Network_Only").kind);
+    }
+
+    @Test
+    void exposesSupportedFailureTypesForSelectionWidgets() {
+        CustomClassificationRule.DescriptorImpl descriptor = new CustomClassificationRule.DescriptorImpl();
+        ListBoxModel items = descriptor.doFillFailureTypeItems();
+
+        assertEquals(5, items.size());
+        assertEquals("AGENT_LOST", items.get(0).value);
+        assertEquals("IDENTITY_PROVIDER_TRANSIENT", items.get(4).value);
     }
 
     @Test

@@ -6,6 +6,7 @@ import hudson.model.TaskListener;
 import io.jenkins.plugins.smart_retry.action.SmartRetryRunAction;
 import io.jenkins.plugins.smart_retry.classify.DeterministicFailureClassifier;
 import io.jenkins.plugins.smart_retry.classify.FailureClassifier;
+import io.jenkins.plugins.smart_retry.config.CustomClassificationRule;
 import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
 import io.jenkins.plugins.smart_retry.model.AttemptRecord;
 import io.jenkins.plugins.smart_retry.model.FailureClassification;
@@ -16,6 +17,7 @@ import io.jenkins.plugins.smart_retry.policy.RetryPolicy;
 import io.jenkins.plugins.smart_retry.policy.RuntimeSettings;
 import java.io.IOException;
 import java.io.Serial;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -46,6 +48,7 @@ public class SmartRetryStepExecution extends StepExecution {
     private RuntimeSettings resolvedSettings;
     private int resolvedConsoleContextLines = DEFAULT_LOG_CONTEXT_MAX_LINES;
     private Set<String> resolvedDisabledBuiltInRuleIds = Set.of();
+    private List<CustomClassificationRule> resolvedCustomClassificationRules = List.of();
     private int attemptNumber = 1;
     private long waitingUntilMillis;
     private transient ScheduledFuture<?> waitingTask;
@@ -124,7 +127,8 @@ public class SmartRetryStepExecution extends StepExecution {
         public void onFailure(StepContext context, Throwable t) {
             try {
                 RuntimeSettings settings = resolvedSettings;
-                FailureClassifier classifier = new DeterministicFailureClassifier(resolvedDisabledBuiltInRuleIds);
+                FailureClassifier classifier = new DeterministicFailureClassifier(
+                        resolvedDisabledBuiltInRuleIds, resolvedCustomClassificationRules);
                 RetryPolicy policy = new DeterministicRetryPolicy();
 
                 String messageContext = loadAttemptConsoleContext(context, attemptNumber, resolvedConsoleContextLines);
@@ -213,11 +217,13 @@ public class SmartRetryStepExecution extends StepExecution {
             resolvedSettings = BuiltInProfiles.resolve(defaults, maxRetries, backoff, initialDelaySeconds);
             resolvedConsoleContextLines = DEFAULT_LOG_CONTEXT_MAX_LINES;
             resolvedDisabledBuiltInRuleIds = Set.of();
+            resolvedCustomClassificationRules = List.of();
             return;
         }
         resolvedSettings = cfg.resolveStepSettings(profile, maxRetries, backoff, initialDelaySeconds);
         resolvedConsoleContextLines = Math.max(0, cfg.getConsoleContextLines());
         resolvedDisabledBuiltInRuleIds = cfg.getDisabledBuiltInRuleIds();
+        resolvedCustomClassificationRules = new ArrayList<>(cfg.getCustomClassificationRules());
     }
 
     @CheckForNull
