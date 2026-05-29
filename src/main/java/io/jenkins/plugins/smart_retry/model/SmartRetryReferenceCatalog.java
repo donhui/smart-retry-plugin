@@ -301,6 +301,13 @@ public final class SmartRetryReferenceCatalog {
                     DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
                     "Only explicit HTTP-style 5xx signals are treated as external service instability unless repository context is explicit."),
             matchedRule(
+                    "network-python-gitlab-5xx",
+                    FailureType.NETWORK_TRANSIENT,
+                    TRIGGER_KIND_MESSAGE_PATTERN,
+                    "GitlabGetError plus 502/503/504 | GitLab is not responding",
+                    DEFAULT_BEHAVIOR_RETRY_CANDIDATE,
+                    "This only applies to python-gitlab GET failures that clearly report a transient GitLab 5xx response."),
+            matchedRule(
                     "network-tls-handshake-timeout",
                     FailureType.NETWORK_TRANSIENT,
                     TRIGGER_KIND_MESSAGE_PATTERN,

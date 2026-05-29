@@ -46,4 +46,16 @@ class SmartRetryReferenceCatalogTest {
         assertEquals("Never retry", rule.getDefaultBehavior());
         assertEquals("No", rule.getDisableable());
     }
+
+    @Test
+    void networkPythonGitlabRuleAppearsInReferenceCatalog() {
+        SmartRetryReferenceCatalog.MatchedRuleDoc rule = SmartRetryReferenceCatalog.matchedRules().stream()
+                .filter(item -> "network-python-gitlab-5xx".equals(item.getName()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("Retry candidate", rule.getDefaultBehavior());
+        assertEquals("Message pattern", rule.getTriggerKind());
+        assertEquals("Yes", rule.getDisableable());
+    }
 }
