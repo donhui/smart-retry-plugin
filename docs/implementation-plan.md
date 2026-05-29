@@ -211,7 +211,7 @@ Classifier behavior:
 - return the first highest-priority confident match
 - default to `UNKNOWN`
 - keep the initial implementation explicit and readable rather than rule-engine heavy
-- if custom rules are added later, keep them additive and explainable rather than turning the classifier into an unrestricted rule engine
+- keep custom rules additive and explainable rather than turning the classifier into an unrestricted rule engine
 
 For the full set of per-signal classification rules and context requirements, see [`mvp-prd.md §10`](./mvp-prd.md).
 
@@ -416,7 +416,7 @@ Output should include:
 - decision
 - delay
 
-If custom rules are added later, output should also include:
+Because custom rules already ship in the current implementation, output should also include:
 
 - a stable `custom-...` rule identifier
 - a clear indication that the rule source was global configuration rather than built-in classifier logic
@@ -461,7 +461,6 @@ What they should verify:
 - transient failure retries and later succeeds
 - non-retryable failure stops immediately
 - default profile settings override correctly when the step omits `profile`
-- custom rules, if enabled later, are surfaced clearly in logs and run-action data
 - custom rules are surfaced clearly in logs and run-action data
 
 ## UI and Config Tests
@@ -497,4 +496,4 @@ Future dependency review should only be reopened if custom rule authoring or ric
 
 Resolved technical questions:
 
-- Persisted custom profile settings already ship in V1. Custom message-pattern rule authoring is deferred to V2 so the pilot release stays scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists.
+- Persisted custom profile settings and constrained custom classification rules already ship in V1. The pilot release keeps those rules narrow, additive, and transient-only, while broader rule authoring UX and step-local policy deltas remain follow-up work.

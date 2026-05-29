@@ -277,7 +277,7 @@ The exact calendar can change, but the dependency order should stay roughly the 
 After the first usable release:
 
 - gather real-world failure samples
-- refine message-pattern rules
+- refine constrained message-pattern rules
 - evaluate whether constrained global custom rules reduce the need for `retryOn` and `skipOn`
 - evaluate whether flaky-test support deserves a separate follow-on design
 

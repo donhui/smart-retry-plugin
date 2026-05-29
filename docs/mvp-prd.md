@@ -443,7 +443,7 @@ Current V1 implementation note:
 - built-in profiles remain fixed as `conservative` and `infra`
 - administrators can define any number of named custom profiles, including a profile literally named `custom` if they want that shorthand
 - current V1 custom profiles only configure retryable transient `FailureType` allowlists
-- current V1 also supports ordered global custom classification rules for narrow regex-to-`FailureType` mappings
+- current V1 also supports constrained global custom classification rules for narrow transient-only regex-to-`FailureType` mappings
 
 ### 11.4 Constrained Custom Rule Design
 
@@ -543,7 +543,7 @@ Current V1 global configuration supports:
 - shared retry count, backoff, and initial delay defaults for all profiles
 - named custom profiles with configurable retryable transient `FailureType` values
 - built-in rule disabling by stable rule id
-- ordered custom classification rules that map regex patterns to supported transient `FailureType` values
+- constrained custom classification rules that map narrow environment-specific regex patterns to supported transient `FailureType` values
 
 Follow-on configuration, if needed after pilot feedback, may support:
 
@@ -643,14 +643,12 @@ Adoption-oriented metrics:
 - small failure taxonomy
 - console logging
 - build summary action
-- global configuration for `defaultProfile`, bounded console context, shared retry defaults, named custom profiles, and built-in rule disabling
+- global configuration for `defaultProfile`, bounded console context, shared retry defaults, named custom profiles, built-in rule disabling, and constrained custom classification rules for supported transient `FailureType` targets
 
 ### Phase 2
 
-- broader global configuration for retry defaults and constrained message-pattern rules
-- richer rule authoring
+- richer rule authoring and rule-debugging UX
 - `retryOn` and `skipOn`
-- better rule-debugging UX
 
 Expected layering in Phase 2:
 
@@ -672,4 +670,4 @@ Expected layering in Phase 2:
 
 Resolved questions:
 
-- Constrained custom classification rules are deferred to V2. The pilot V1 line ships with built-in classifier rules, `disabledBuiltInRules`, and named custom profiles only. Custom message-pattern rule authoring will be reconsidered after pilot feedback shows whether built-in coverage plus profile allowlists leave real gaps.
+- Constrained custom classification rules are part of the pilot V1 line. They remain additive, transient-only, and subordinate to built-in hard-stop behavior. Follow-up evaluation should focus on whether broader rule authoring UX or step-local policy deltas are still needed after pilot feedback.

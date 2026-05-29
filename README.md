@@ -48,7 +48,7 @@ The plugin supports Jenkins global configuration for:
 - default profile selection
 - shared retry defaults
 - named custom profiles
-- ordered custom classification rules for narrow environment-specific regex matches
+- constrained custom classification rules for narrow transient-only environment-specific regex matches
 - built-in rule disabling by individual built-in retry rule id
 - bounded console-log context depth used during classification
 

@@ -31,8 +31,8 @@ Product behavior and failure taxonomy decisions are recorded in [`mvp-prd.md`](.
 Implementation decisions made during delivery:
 
 - Unknown profile names fail fast at step startup instead of silently falling back to `conservative`
-- The global configuration surface ships as `defaultProfile`, `consoleContextLines`, shared retry timing defaults, named custom profiles, and `disabledBuiltInRules`
-- Constrained custom classification-rule authoring is deferred to post-MVP V2; the pilot release is scoped to built-in classifier rules, `disabledBuiltInRules`, and named custom profile allowlists
+- The global configuration surface ships as `defaultProfile`, `consoleContextLines`, shared retry timing defaults, named custom profiles, `disabledBuiltInRules`, and constrained custom classification rules for narrow transient-only regex mappings
+- Custom classification-rule authoring stays intentionally constrained in the pilot release: built-in hard-stop behavior remains authoritative, supported target types stay transient-only, and broader rule-debugging or richer authoring UX is follow-up work
 - Deterministic SCM input errors such as missing revisions, branches, tags, or commit SHAs never retry
 - Attempt-scoped console log context is captured per-attempt using a bounded tail of `Run` console log, scoped via a marker line, to support `sh`-style failures where stderr does not appear in the thrown exception
 - In-flight Pipeline execution survives Jenkins restarts by keeping only primitive attempt state in `StepExecution` and rescheduling in `onResume()`
@@ -89,7 +89,7 @@ Implementation decisions made during delivery:
 
 - [x] Add `SmartRetryGlobalConfiguration`
 - [x] Add default profile configuration
-- [x] Confirm constrained custom classification rules are post-MVP V2 follow-up work
+- [x] Confirm the shipped custom classification-rule surface stays narrow, additive, and transient-only
 - [x] Merge global defaults with step-level overrides
 - [x] Add configuration round-trip tests
 
@@ -114,7 +114,7 @@ Implementation decisions made during delivery:
 Recommended next coding slice:
 
 1. Collect pilot feedback on profile usability, classifier gaps, and whether any additional high-confidence transient rules are still needed for V1
-2. Validate whether built-in classifier coverage plus named custom profiles leave any repeatable gaps that justify constrained custom classification rules in V2
+2. Validate whether the shipped constrained custom classification rules cover real environment-specific gaps without encouraging over-broad matching
 3. Keep `retryOn` and `skipOn` out of the MVP unless pilot users show a repeatable need for step-local policy deltas beyond named custom profiles
 
 ## Open Questions
@@ -188,7 +188,7 @@ Recommended next coding slice:
 - [x] Polished `smartRetry` authoring UX in Snippet Generator by adding a dedicated step form, field help, and descriptor-backed dropdowns/validation for built-in and custom profile selection
 - [x] Fixed default-value handling for optional step arguments so blank `profile` and `backoff` selections no longer persist as empty-string overrides when Jenkins should use global defaults
 - [x] Added focused step-configuration coverage and verified the Snippet Generator-related behavior, including the real `pipeline-syntax/generateSnippet` endpoint, with `mvn spotless:apply` and `mvn -Dtest=SmartRetryStepTest test`
-- [x] Closed the remaining MVP documentation evaluation item by deciding that constrained custom classification-rule authoring is post-MVP V2 work rather than part of the pilot V1 line
+- [x] Closed the remaining MVP documentation evaluation item by documenting constrained custom classification-rule authoring as part of the pilot V1 line, while keeping broader rule authoring and rule-debugging UX as follow-up work
 
 ### 2026-05-22
 
