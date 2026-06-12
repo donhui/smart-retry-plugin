@@ -25,7 +25,6 @@ This file applies to the entire repository.
 - `docs/mvp-prd.md`: product scope and behavior boundaries
 - `docs/development-plan.md`: milestone sequencing
 - `docs/implementation-plan.md`: technical implementation design
-- `docs/task-tracker.md`: checklist-based delivery status
 
 ## Working rules
 
@@ -63,7 +62,6 @@ This file applies to the entire repository.
   - update `docs/mvp-prd.md` first
   - then update `docs/development-plan.md`
   - then update `docs/implementation-plan.md`
-  - finally update `docs/task-tracker.md`
 - For dependency changes in `pom.xml`, stay aligned with the Jenkins plugin parent and BOM.
 - Keep `pom.xml` minimal and avoid re-declaring parent-provided defaults unless the repository intentionally overrides them.
 - Avoid relying on undeclared transitive plugin dependencies.
@@ -71,10 +69,9 @@ This file applies to the entire repository.
 
 ## Documentation rules
 
-- Keep documentation responsibilities separated: `README.md` stays concise and user-facing, `docs/mvp-prd.md` defines product boundaries, `docs/development-plan.md` defines delivery order, `docs/implementation-plan.md` defines code architecture, and `docs/task-tracker.md` carries checklist-based execution status.
+- Keep documentation responsibilities separated: `README.md` stays concise and user-facing, `docs/mvp-prd.md` defines product boundaries, `docs/development-plan.md` defines delivery order, and `docs/implementation-plan.md` defines code architecture.
 - Prefer `current implementation`, `V1`, and `V2` wording over vague roadmap language.
 - Do not duplicate content across documents. Each decision, rule, or list belongs in exactly one authoritative file; other files reference it instead of repeating it.
 - `README.md` is a user manual only. Keep product-scope definitions, failure taxonomy, and design rationale in `docs/mvp-prd.md`, not in `README.md`.
-- `docs/task-tracker.md` records implementation decisions not covered by the PRD and the delivery change log. Do not copy PRD behavior rules into it.
-- `docs/development-plan.md` describes milestone goals and exit criteria. Do not duplicate task checklists from `docs/task-tracker.md` into it.
+- `docs/development-plan.md` describes milestone goals and exit criteria. Do not duplicate implementation architecture details into it.
 - `docs/implementation-plan.md` describes active architecture. Compress or remove sections that describe completed one-time steps with no ongoing reference value.

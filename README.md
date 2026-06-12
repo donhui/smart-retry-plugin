@@ -260,7 +260,6 @@ Yes. Administrators can define named custom profiles in Jenkins global configura
 - [MVP PRD](./docs/mvp-prd.md)
 - [Development Plan](./docs/development-plan.md)
 - [Implementation Plan](./docs/implementation-plan.md)
-- [Task Tracker](./docs/task-tracker.md)
 
 ## Contributing
 
