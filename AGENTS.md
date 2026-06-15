@@ -37,6 +37,9 @@ This file applies to the entire repository.
 - Keep concerns separated: classification logic in classifier classes, retry decisions in policy classes, Pipeline flow in step execution classes, and UI as presentation-only.
 - Prefer Jenkins-native binding and configuration patterns: use `StaplerRequest2` in new Stapler-bound code, use `@DataBoundConstructor` and `@DataBoundSetter` consistently, and keep `@Symbol` names stable and Pipeline-friendly.
 - When adding mutating web endpoints, require `@POST` and enforce the least-powerful Jenkins permission that fits the action.
+- Treat every Stapler web endpoint (`doCheck*`, `doFill*`, `doTest*`, `configure`, and similar HTTP-reachable methods) as security-sensitive by default: add an explicit least-privilege Jenkins permission check in the method body.
+- For Stapler form validation and form fill endpoints, prefer explicit `@POST` as well when compatible with Jenkins UX and current Jenkins security scanning expectations.
+- When adding or changing Stapler endpoints, add or update focused tests that verify the expected security annotation and/or permission gate.
 - Keep logs explainable and stable so users can understand why retries did or did not happen.
 - Send build-user diagnostics to `TaskListener`, form validation, or Jenkins logging as appropriate; do not use `System.out.println`.
 - Prefer small focused classes, clear names, and minimal inline comments.
