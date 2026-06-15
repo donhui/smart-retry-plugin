@@ -11,6 +11,7 @@ import io.jenkins.plugins.smart_retry.config.SmartRetryGlobalConfiguration;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.Locale;
 import java.util.Set;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -19,6 +20,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public class SmartRetryStep extends Step {
 
@@ -77,6 +79,10 @@ public class SmartRetryStep extends Step {
     @Symbol("smartRetry")
     public static final class DescriptorImpl extends StepDescriptor {
 
+        private static void checkReadPermission() {
+            Jenkins.get().checkPermission(Jenkins.READ);
+        }
+
         @Override
         public String getFunctionName() {
             return "smartRetry";
@@ -99,7 +105,9 @@ public class SmartRetryStep extends Step {
             return Set.of(Run.class, TaskListener.class);
         }
 
+        @POST
         public ListBoxModel doFillProfileItems() {
+            checkReadPermission();
             SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
             String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : BuiltInProfiles.PROFILE_CONSERVATIVE;
 
@@ -118,7 +126,9 @@ public class SmartRetryStep extends Step {
             return items;
         }
 
+        @POST
         public ListBoxModel doFillBackoffItems() {
+            checkReadPermission();
             ListBoxModel items = new ListBoxModel();
             items.add("Use Jenkins default", "");
             items.add(BuiltInProfiles.BACKOFF_FIXED, BuiltInProfiles.BACKOFF_FIXED);
@@ -126,7 +136,9 @@ public class SmartRetryStep extends Step {
             return items;
         }
 
+        @POST
         public FormValidation doCheckProfile(@QueryParameter String value) {
+            checkReadPermission();
             if (value == null || value.isBlank()) {
                 SmartRetryGlobalConfiguration cfg = SmartRetryGlobalConfiguration.get();
                 String effectiveDefault = cfg != null ? cfg.getDefaultProfile() : BuiltInProfiles.PROFILE_CONSERVATIVE;
@@ -151,11 +163,15 @@ public class SmartRetryStep extends Step {
                     "Unknown profile name. Smart Retry will reject Pipeline requests that reference this profile.");
         }
 
+        @POST
         public FormValidation doCheckMaxRetries(@QueryParameter String value) {
+            checkReadPermission();
             return validateOptionalNonNegativeInteger("Max retries", value);
         }
 
+        @POST
         public FormValidation doCheckInitialDelaySeconds(@QueryParameter String value) {
+            checkReadPermission();
             return validateOptionalNonNegativeInteger("Initial delay seconds", value);
         }
 

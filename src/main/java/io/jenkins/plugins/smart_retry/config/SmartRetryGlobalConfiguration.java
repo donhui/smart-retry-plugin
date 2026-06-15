@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -48,6 +49,10 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
 
     public static SmartRetryGlobalConfiguration get() {
         return GlobalConfiguration.all().get(SmartRetryGlobalConfiguration.class);
+    }
+
+    private static void checkAdministerPermission() {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
     }
 
     public String getDefaultProfile() {
@@ -166,6 +171,7 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
     @Override
     @POST
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
+        checkAdministerPermission();
         normalizeRepeatableProperties(json);
         validateCustomProfilesForm(json);
         validateCustomClassificationRulesForm(json);
@@ -176,7 +182,9 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return true;
     }
 
+    @POST
     public ListBoxModel doFillDefaultProfileItems() {
+        checkAdministerPermission();
         ListBoxModel items = new ListBoxModel();
         items.add(BuiltInProfiles.PROFILE_CONSERVATIVE, BuiltInProfiles.PROFILE_CONSERVATIVE);
         items.add(BuiltInProfiles.PROFILE_INFRA, BuiltInProfiles.PROFILE_INFRA);
@@ -189,14 +197,18 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return items;
     }
 
+    @POST
     public ListBoxModel doFillBackoffItems() {
+        checkAdministerPermission();
         ListBoxModel items = new ListBoxModel();
         items.add(BACKOFF_FIXED, BACKOFF_FIXED);
         items.add(BACKOFF_EXPONENTIAL, BACKOFF_EXPONENTIAL);
         return items;
     }
 
+    @POST
     public FormValidation doCheckDefaultProfile(@QueryParameter String value) {
+        checkAdministerPermission();
         String normalized = normalize(value, DEFAULT_PROFILE);
         if (BuiltInProfiles.isBuiltInProfile(normalized)) {
             return FormValidation.ok("Using built-in profile '" + normalized + "'.");
@@ -210,7 +222,9 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
                 "Unknown profile name. Smart Retry will reject Pipeline requests that reference this profile.");
     }
 
+    @POST
     public FormValidation doCheckDisabledBuiltInRules(@QueryParameter String value) {
+        checkAdministerPermission();
         if (value == null || value.isBlank()) {
             return FormValidation.ok("No built-in rules are disabled.");
         }
@@ -234,22 +248,30 @@ public final class SmartRetryGlobalConfiguration extends GlobalConfiguration {
         return FormValidation.warning("Unknown rule ids will be ignored when saving: " + String.join(", ", unknown));
     }
 
+    @POST
     public FormValidation doCheckCustomClassificationRules(@QueryParameter String value) {
+        checkAdministerPermission();
         if (value == null || value.isBlank()) {
             return FormValidation.ok("No custom rules are configured.");
         }
         return FormValidation.ok();
     }
 
+    @POST
     public FormValidation doCheckConsoleContextLines(@QueryParameter String value) {
+        checkAdministerPermission();
         return validateNonNegativeInteger("Console context lines", value);
     }
 
+    @POST
     public FormValidation doCheckMaxRetries(@QueryParameter String value) {
+        checkAdministerPermission();
         return validateNonNegativeInteger("Max retries", value);
     }
 
+    @POST
     public FormValidation doCheckInitialDelaySeconds(@QueryParameter String value) {
+        checkAdministerPermission();
         return validateNonNegativeInteger("Initial delay seconds", value);
     }
 

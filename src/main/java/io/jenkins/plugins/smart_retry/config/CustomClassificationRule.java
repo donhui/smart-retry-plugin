@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public final class CustomClassificationRule extends AbstractDescribableImpl<CustomClassificationRule>
         implements Serializable {
@@ -141,11 +143,17 @@ public final class CustomClassificationRule extends AbstractDescribableImpl<Cust
     @Extension
     public static final class DescriptorImpl extends Descriptor<CustomClassificationRule> {
 
+        private static void checkAdministerPermission() {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+        }
+
         public List<FailureType> getSupportedFailureTypes() {
             return supportedFailureTypes();
         }
 
+        @POST
         public ListBoxModel doFillFailureTypeItems() {
+            checkAdministerPermission();
             ListBoxModel items = new ListBoxModel();
             for (FailureType type : SUPPORTED_FAILURE_TYPES) {
                 items.add(type.name(), type.name());
@@ -164,7 +172,9 @@ public final class CustomClassificationRule extends AbstractDescribableImpl<Cust
             };
         }
 
+        @POST
         public FormValidation doCheckNameSuffix(@QueryParameter String value) {
+            checkAdministerPermission();
             String normalized = normalizeName(value);
             if (normalized.isBlank()) {
                 return FormValidation.error("Rule name suffix is required.");
@@ -172,11 +182,15 @@ public final class CustomClassificationRule extends AbstractDescribableImpl<Cust
             return FormValidation.ok("Rule name will be stored as '" + normalized + "'.");
         }
 
+        @POST
         public FormValidation doCheckName(@QueryParameter String value) {
+            checkAdministerPermission();
             return doCheckNameSuffix(value);
         }
 
+        @POST
         public FormValidation doCheckPattern(@QueryParameter String value) {
+            checkAdministerPermission();
             String normalized = normalizePattern(value);
             if (normalized.isBlank()) {
                 return FormValidation.error("Pattern is required.");
@@ -189,7 +203,9 @@ public final class CustomClassificationRule extends AbstractDescribableImpl<Cust
             }
         }
 
+        @POST
         public FormValidation doCheckFailureType(@QueryParameter String value) {
+            checkAdministerPermission();
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Failure type is required.");
             }

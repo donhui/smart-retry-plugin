@@ -10,7 +10,10 @@ import io.jenkins.plugins.smart_retry.model.FailureType;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+@WithJenkins
 class CustomProfileSettingsTest {
 
     @Test
@@ -36,7 +39,7 @@ class CustomProfileSettingsTest {
     }
 
     @Test
-    void validatesProfileNames() {
+    void validatesProfileNames(JenkinsRule jenkins) {
         CustomProfileSettings.DescriptorImpl descriptor = new CustomProfileSettings.DescriptorImpl();
 
         assertEquals(FormValidation.Kind.ERROR, descriptor.doCheckName("").kind);
@@ -45,7 +48,7 @@ class CustomProfileSettingsTest {
     }
 
     @Test
-    void exposesSupportedFailureTypesForSelectionWidgets() {
+    void exposesSupportedFailureTypesForSelectionWidgets(JenkinsRule jenkins) {
         CustomClassificationRule.DescriptorImpl descriptor = new CustomClassificationRule.DescriptorImpl();
         ListBoxModel items = descriptor.doFillFailureTypeItems();
 

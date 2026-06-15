@@ -15,9 +15,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public final class CustomProfileSettings extends AbstractDescribableImpl<CustomProfileSettings>
         implements Serializable {
@@ -144,11 +146,17 @@ public final class CustomProfileSettings extends AbstractDescribableImpl<CustomP
     @Extension
     public static final class DescriptorImpl extends Descriptor<CustomProfileSettings> {
 
+        private static void checkAdministerPermission() {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+        }
+
         public List<FailureType> getSupportedRetryableFailureTypes() {
             return supportedRetryableFailureTypes();
         }
 
+        @POST
         public FormValidation doCheckName(@QueryParameter String value) {
+            checkAdministerPermission();
             String normalized = normalizeName(value);
             if (normalized.isBlank()) {
                 return FormValidation.error("Profile name is required.");
