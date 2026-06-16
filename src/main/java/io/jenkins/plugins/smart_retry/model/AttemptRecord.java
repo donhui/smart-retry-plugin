@@ -88,6 +88,10 @@ public final class AttemptRecord implements Serializable {
         return "failure-type-" + slugify(failureType.name());
     }
 
+    public String getFailureTypeDetailsDocumentationAnchor() {
+        return "detail-" + getFailureTypeDocumentationAnchor();
+    }
+
     @CheckForNull
     public String getMatchedRuleDocumentationAnchor() {
         if (matchedRule == null) {

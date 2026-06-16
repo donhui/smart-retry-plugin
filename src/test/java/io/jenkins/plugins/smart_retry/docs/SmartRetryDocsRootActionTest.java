@@ -28,24 +28,30 @@ class SmartRetryDocsRootActionTest {
         String html = page.asXml();
         // App bar title
         Assertions.assertTrue(text.contains("Smart Retry Docs"));
-        // Tab bar labels
-        Assertions.assertTrue(html.contains("data-tab=\"tab-overview\""));
-        Assertions.assertTrue(html.contains("data-tab=\"tab-details\""));
-        Assertions.assertTrue(html.contains("data-tab=\"tab-rules\""));
-        Assertions.assertTrue(html.contains("data-tab=\"tab-custom-rules\""));
+        // Tab panes are rendered server-side and converted into tabs by Jenkins core JS.
+        Assertions.assertTrue(html.contains("jenkins-tab-pane__title"));
+        Assertions.assertTrue(text.contains("Quick Comparison"));
+        Assertions.assertTrue(text.contains("Failure Type Details"));
+        Assertions.assertTrue(text.contains("Matched Rules"));
+        Assertions.assertTrue(text.contains("Custom Rules"));
         // Quick Comparison tab: failure types appear in table
+        Assertions.assertTrue(html.contains("id=\"tab-overview\""));
         Assertions.assertTrue(html.contains("id=\"failure-type-agent-lost\""));
         Assertions.assertTrue(html.contains("id=\"failure-type-scm-transient\""));
         // Failure Type Details tab: master-detail panels present
+        Assertions.assertTrue(html.contains("id=\"tab-details\""));
         Assertions.assertTrue(html.contains("id=\"detail-failure-type-agent-lost\""));
         Assertions.assertTrue(html.contains("id=\"detail-failure-type-scm-transient\""));
         // Cross-link from detail panel to rules tab with filter
+        Assertions.assertTrue(html.contains("data-tab-target=\"tab-rules\""));
         Assertions.assertTrue(html.contains("data-filter=\"AGENT_LOST\""));
         // Matched Rules tab: rule rows with data-failure-type attribute
+        Assertions.assertTrue(html.contains("id=\"tab-rules\""));
         Assertions.assertTrue(html.contains("id=\"rule-agent-remoting-channel-closed\""));
         Assertions.assertTrue(html.contains("data-failure-type=\"SCM_TRANSIENT\""));
         Assertions.assertTrue(html.contains("Trigger kind"));
         // Custom rules tab: configured custom rules are surfaced
+        Assertions.assertTrue(html.contains("id=\"tab-custom-rules\""));
         Assertions.assertTrue(html.contains("custom-rule-network-reset"));
         Assertions.assertTrue(html.contains("connection reset"));
         // Filter select populated with failure type names

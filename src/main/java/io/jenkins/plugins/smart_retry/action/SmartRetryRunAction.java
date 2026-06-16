@@ -23,7 +23,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
     private static final String OUTCOME_SUCCESS = "SUCCESS";
     private static final String OUTCOME_FAILED = "FAILED";
     private static final String RETRY_WORD = "retry";
-    private static final String DOCS_TAB_DETAILS = "smartRetryDocs#tab-details";
+    private static final String DOCS_URL_PREFIX = "smartRetryDocs/#";
 
     private transient Run<?, ?> run;
 
@@ -45,7 +45,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
 
     @Override
     public String getIconFileName() {
-        return "/plugin/smart-retry/icons/smart-retry.svg";
+        return "symbol-reload-outline plugin-ionicons-api";
     }
 
     @Override
@@ -324,7 +324,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         if (attempt == null || OUTCOME_SUCCESS.equals(finalOutcome)) {
             return null;
         }
-        return DOCS_TAB_DETAILS;
+        return DOCS_URL_PREFIX + attempt.getFailureTypeDetailsDocumentationAnchor();
     }
 
     @CheckForNull
@@ -334,7 +334,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
             return null;
         }
         String anchor = attempt.getMatchedRuleDocumentationAnchor();
-        return anchor != null ? "smartRetryDocs#" + anchor : null;
+        return anchor != null ? DOCS_URL_PREFIX + anchor : null;
     }
 
     @CheckForNull
@@ -343,7 +343,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
         if (attempt == null) {
             return null;
         }
-        return DOCS_TAB_DETAILS;
+        return DOCS_URL_PREFIX + attempt.getFailureTypeDetailsDocumentationAnchor();
     }
 
     @CheckForNull
@@ -353,7 +353,7 @@ public final class SmartRetryRunAction implements Action, RunAction2, Serializab
             return null;
         }
         String anchor = attempt.getMatchedRuleDocumentationAnchor();
-        return anchor != null ? "smartRetryDocs#" + anchor : null;
+        return anchor != null ? DOCS_URL_PREFIX + anchor : null;
     }
 
     private static String pluralize(String word, int count) {

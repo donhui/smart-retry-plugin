@@ -1,5 +1,6 @@
 <?jelly escape-by-default="true"?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <link rel="stylesheet" href="${rootURL}/plugin/smart-retry/css/config.css" />
     <f:entry title="Name" field="name">
         <f:textbox />
         <div class="jenkins-description">
@@ -7,14 +8,18 @@
         </div>
     </f:entry>
     <f:entry title="Retryable failure types" field="retryableFailureTypeSelections">
-        <div class="jenkins-checkbox-group">
+        <div class="sr-checkbox-group">
             <j:forEach var="failureType" items="${descriptor.supportedRetryableFailureTypes}">
-                <f:checkbox
-                    name="_.retryableFailureTypeSelections"
-                    json="${failureType.name()}"
-                    checked="${instance != null and instance.includesRetryableFailureType(failureType)}"
-                    title="${failureType.name()}"
-                    description="${descriptor.describeRetryableFailureType(failureType)}" />
+                <div class="sr-checkbox-option">
+                    <f:checkbox
+                        name="_.retryableFailureTypeSelections"
+                        json="${failureType.name()}"
+                        checked="${instance != null and instance.includesRetryableFailureType(failureType)}"
+                        title="${failureType.name()}" />
+                    <div class="jenkins-description sr-checkbox-option__description">
+                        ${descriptor.describeRetryableFailureType(failureType)}
+                    </div>
+                </div>
             </j:forEach>
         </div>
         <div class="jenkins-description">

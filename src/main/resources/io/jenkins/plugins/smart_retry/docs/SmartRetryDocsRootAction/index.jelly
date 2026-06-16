@@ -3,6 +3,7 @@
     <l:layout title="Smart Retry Docs">
         <l:header>
             <link rel="stylesheet" href="${rootURL}/plugin/smart-retry/css/docs.css" />
+            <script src="${resURL}/jsbundles/section-to-tabs.js" type="text/javascript" defer="true" />
         </l:header>
         <l:main-panel>
             <div class="jenkins-app-bar">
@@ -14,19 +15,11 @@
                 </div>
             </div>
 
-            <!-- Tab bar -->
-            <div class="sr-tabs" role="tablist">
-                <button class="sr-tab-btn" data-tab="tab-overview" role="tab">Quick Comparison</button>
-                <button class="sr-tab-btn" data-tab="tab-details" role="tab">Failure Type Details</button>
-                <button class="sr-tab-btn" data-tab="tab-rules" role="tab">Matched Rules</button>
-                <button class="sr-tab-btn" data-tab="tab-custom-rules" role="tab">Custom Rules</button>
-            </div>
-
-            <!-- Tab 1: Quick Comparison -->
-            <div id="tab-overview" class="sr-tab-panel">
+            <l:tabPane title="Quick Comparison">
+                <div id="tab-overview" class="sr-tab-anchor"></div>
                 <l:card title="Quick Comparison">
                     <p>Retry behavior depends on both classification confidence and the active retry profile.</p>
-                    <table class="pane sortable">
+                    <table class="jenkins-table sortable">
                         <thead>
                             <tr>
                                 <th align="left">Failure type</th>
@@ -47,10 +40,10 @@
                         </tbody>
                     </table>
                 </l:card>
-            </div>
+            </l:tabPane>
 
-            <!-- Tab 2: Failure Type Details (Master-Detail) -->
-            <div id="tab-details" class="sr-tab-panel">
+            <l:tabPane title="Failure Type Details">
+                <div id="tab-details" class="sr-tab-anchor"></div>
                 <l:card title="Failure Type Details">
                     <div class="sr-master-detail">
                         <nav class="sr-master" aria-label="Failure types">
@@ -67,7 +60,7 @@
                                 <div id="detail-${d.anchorId}" class="sr-detail-panel">
                                     <h3>${d.name}</h3>
                                     <p>${d.meaning}</p>
-                                    <table class="pane">
+                                    <table class="jenkins-table">
                                         <tbody>
                                             <tr>
                                                 <th align="left">Conservative profile</th>
@@ -87,34 +80,36 @@
                                             </tr>
                                         </tbody>
                                     </table>
-                                    <p><a href="#tab-rules" class="sr-tab-link" data-tab="tab-rules" data-filter="${d.name}">View matched rules for ${d.name} →</a></p>
+                                    <p><a href="#tab-rules" class="sr-tab-link" data-tab-target="tab-rules" data-filter="${d.name}">View matched rules for ${d.name} →</a></p>
                                 </div>
                             </j:forEach>
                         </div>
                     </div>
                 </l:card>
-            </div>
+            </l:tabPane>
 
-            <!-- Tab 3: Matched Rules (flat filtered table) -->
-            <div id="tab-rules" class="sr-tab-panel">
+            <l:tabPane title="Matched Rules">
+                <div id="tab-rules" class="sr-tab-anchor"></div>
                 <l:card title="Matched Rules">
                     <div class="sr-filter-bar">
                         <label for="sr-rules-filter">Filter by failure type:</label>
-                        <select id="sr-rules-filter">
-                            <option value="">All</option>
-                            <j:forEach var="name" items="${it.failureTypeNames}">
-                                <j:choose>
-                                    <j:when test="${name == 'SCM_TRANSIENT'}">
-                                        <option value="${name}" selected="selected">${name}</option>
-                                    </j:when>
-                                    <j:otherwise>
-                                        <option value="${name}">${name}</option>
-                                    </j:otherwise>
-                                </j:choose>
-                            </j:forEach>
-                        </select>
+                        <div class="jenkins-select sr-rules-filter-select">
+                            <select id="sr-rules-filter" class="jenkins-select__input">
+                                <option value="">All</option>
+                                <j:forEach var="name" items="${it.failureTypeNames}">
+                                    <j:choose>
+                                        <j:when test="${name == 'SCM_TRANSIENT'}">
+                                            <option value="${name}" selected="selected">${name}</option>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <option value="${name}">${name}</option>
+                                        </j:otherwise>
+                                    </j:choose>
+                                </j:forEach>
+                            </select>
+                        </div>
                     </div>
-                    <table class="pane sortable sr-rules-table">
+                    <table class="jenkins-table sortable sr-rules-table">
                         <thead>
                             <tr>
                                 <th align="left">Rule name</th>
@@ -152,12 +147,13 @@
                         </tbody>
                     </table>
                 </l:card>
-            </div>
+            </l:tabPane>
 
-            <div id="tab-custom-rules" class="sr-tab-panel">
+            <l:tabPane title="Custom Rules">
+                <div id="tab-custom-rules" class="sr-tab-anchor"></div>
                 <l:card title="Custom Rules">
                     <p>These are the current global custom classification rules from Jenkins configuration.</p>
-                    <table class="pane sortable">
+                    <table class="jenkins-table sortable">
                         <thead>
                             <tr>
                                 <th align="left">Rule name</th>
@@ -180,7 +176,7 @@
                         </tbody>
                     </table>
                 </l:card>
-            </div>
+            </l:tabPane>
 
             <script src="${rootURL}/plugin/smart-retry/js/docs.js"></script>
         </l:main-panel>

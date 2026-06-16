@@ -250,7 +250,7 @@ class SmartRetryStepTest {
         SmartRetryRunAction action = build.getAction(SmartRetryRunAction.class);
 
         Assertions.assertNotNull(action);
-        Assertions.assertEquals("/plugin/smart-retry/icons/smart-retry.svg", action.getIconFileName());
+        Assertions.assertEquals("symbol-reload-outline plugin-ionicons-api", action.getIconFileName());
 
         HtmlPage page = jenkins.createWebClient().goTo(build.getUrl() + action.getUrlName());
 
@@ -263,7 +263,7 @@ class SmartRetryStepTest {
         Assertions.assertTrue(page.asNormalizedText().contains("Failed"));
         Assertions.assertTrue(page.asNormalizedText().contains("Retry scheduled"));
         Assertions.assertTrue(page.asNormalizedText().contains("SCM_TRANSIENT"));
-        Assertions.assertTrue(page.asXml().contains("smartRetryDocs"));
+        Assertions.assertTrue(page.asXml().contains("smartRetryDocs/#detail-failure-type-scm-transient"));
         Assertions.assertTrue(page.asXml().contains("failure-type-scm-transient"));
         Assertions.assertTrue(page.asXml().contains("scm-remote-end-hung-up"));
     }

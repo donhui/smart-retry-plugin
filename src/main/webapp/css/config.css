@@ -31,3 +31,17 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
+
+.sr-checkbox-group {
+    display: grid;
+    gap: 12px;
+}
+
+.sr-checkbox-option {
+    display: grid;
+    gap: 4px;
+}
+
+.sr-checkbox-option__description {
+    margin-left: 40px;
+}

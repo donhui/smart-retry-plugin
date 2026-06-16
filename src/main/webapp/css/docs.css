@@ -1,40 +1,8 @@
 /* Smart Retry docs page styles */
 
-/* ---------- Tab bar ---------- */
-.sr-tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 2px solid var(--light-grey, #e0e0e0);
-    margin-bottom: 16px;
-}
-
-.sr-tab-btn {
-    padding: 8px 18px;
-    border: none;
-    border-bottom: 3px solid transparent;
-    background: none;
-    cursor: pointer;
-    font-size: 0.95em;
-    font-weight: 500;
-    color: var(--text-color-secondary, #555);
-    margin-bottom: -2px;
-}
-
-.sr-tab-btn:hover {
-    color: var(--text-color, #333);
-}
-
-.sr-tab-btn.sr-tab-active {
-    border-bottom-color: var(--focus-input-border, #1e73be);
-    color: var(--focus-input-border, #1e73be);
-}
-
-.sr-tab-panel {
-    display: none;
-}
-
-.sr-tab-panel.sr-tab-visible {
-    display: block;
+.sr-tab-anchor {
+    position: relative;
+    top: -8px;
 }
 
 /* ---------- Master-Detail layout ---------- */
@@ -106,14 +74,10 @@
     white-space: nowrap;
 }
 
-.sr-filter-bar select {
-    padding: 5px 10px;
-    border: 1px solid var(--light-grey, #ccc);
-    border-radius: 4px;
-    font-size: 0.9em;
+.sr-rules-filter-select {
+    width: 250px;
 }
 
 .sr-rules-table tr.sr-row-hidden {
     display: none;
 }
-

@@ -1,6 +1,9 @@
 <?jelly escape-by-default="true"?>
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout" xmlns:st="jelly:stapler">
     <l:layout title="Smart Retry">
+        <l:header>
+            <link rel="stylesheet" href="${rootURL}/plugin/smart-retry/css/run-action.css" />
+        </l:header>
         <l:side-panel>
             <st:include page="sidepanel.jelly" it="${it.run}" />
         </l:side-panel>
@@ -13,11 +16,11 @@
                         <j:if test="${it.run}">
                             <p><a href="../">${it.run.fullDisplayName}</a></p>
                         </j:if>
-                        <p>
+                        <div class="sr-badge-row">
                             <l:badge badge="${it.finalOutcomeBadge}" />
                             <l:badge badge="${it.retriesScheduledBadge}" />
                             <l:badge badge="${it.profileBadge}" />
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -25,7 +28,7 @@
             <l:card title="Overview">
                 <p>${it.narrativeSummary}</p>
                 <p>${it.narrativeReason}</p>
-                <table class="pane">
+                <table class="jenkins-table">
                     <tbody>
                         <j:if test="${it.hasProfile}">
                             <tr>
@@ -104,7 +107,7 @@
             <l:card title="Attempt Log">
                 <j:choose>
                     <j:when test="${it.attemptsCount > 0}">
-                        <table class="pane sortable">
+                        <table class="jenkins-table sortable">
                             <thead>
                                 <tr>
                                     <th align="left">Attempt</th>
@@ -120,14 +123,14 @@
                                     <tr>
                                         <td>${a.attemptNumber}</td>
                                         <td>
-                                            <a href="${rootURL}/smartRetryDocs#${a.failureTypeDocumentationAnchor}">
+                                            <a href="${rootURL}/smartRetryDocs/#${a.failureTypeDetailsDocumentationAnchor}">
                                                 ${a.failureType}
                                             </a>
                                         </td>
                                         <td>
                                             <j:choose>
                                                 <j:when test="${a.matchedRuleDocumentationAnchor}">
-                                                    <a href="${rootURL}/smartRetryDocs#${a.matchedRuleDocumentationAnchor}">
+                                                    <a href="${rootURL}/smartRetryDocs/#${a.matchedRuleDocumentationAnchor}">
                                                         ${a.matchedRuleDisplay}
                                                     </a>
                                                 </j:when>

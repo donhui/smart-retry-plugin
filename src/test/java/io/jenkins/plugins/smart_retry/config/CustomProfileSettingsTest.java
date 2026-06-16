@@ -8,6 +8,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.smart_retry.model.FailureType;
 import io.jenkins.plugins.smart_retry.policy.BuiltInProfiles;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -62,5 +63,21 @@ class CustomProfileSettingsTest {
         assertNotNull(
                 CustomProfileSettings.class.getResource(
                         "/io/jenkins/plugins/smart_retry/config/CustomProfileSettings/help-retryableFailureTypeSelections.html"));
+    }
+
+    @Test
+    void definesGroupedCheckboxMarkupForRetryableFailureTypes() throws Exception {
+        String jelly = new String(
+                CustomProfileSettings.class
+                        .getResourceAsStream(
+                                "/io/jenkins/plugins/smart_retry/config/CustomProfileSettings/config.jelly")
+                        .readAllBytes(),
+                StandardCharsets.UTF_8);
+
+        assertTrue(jelly.contains("sr-checkbox-group"));
+        assertTrue(jelly.contains("sr-checkbox-option"));
+        assertTrue(jelly.contains("sr-checkbox-option__description"));
+        assertTrue(jelly.contains("descriptor.describeRetryableFailureType(failureType)"));
+        assertTrue(jelly.contains("title=\"${failureType.name()}\""));
     }
 }
