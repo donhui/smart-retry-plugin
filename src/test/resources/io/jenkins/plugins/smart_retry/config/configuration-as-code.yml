@@ -1,0 +1,18 @@
+unclassified:
+  smartRetryGlobalConfiguration:
+    backoff: "fixed"
+    consoleContextLines: 200
+    customClassificationRules:
+    - description: "When test (kubedock/testcontainer) test are reaching quotas"
+      failureType: AGENT_LOST
+      name: "custom-rule-okd-quotas"
+      nameSuffix: "okd-quotas"
+      pattern: "is forbidden: exceeded quota: quota"
+    customProfiles:
+    - name: "okd-infra"
+      retryableFailureTypeSelections:
+      - "AGENT_LOST"
+      retryableFailureTypes: "AGENT_LOST"
+    defaultProfile: "conservative"
+    initialDelaySeconds: 10
+    maxRetries: 1
